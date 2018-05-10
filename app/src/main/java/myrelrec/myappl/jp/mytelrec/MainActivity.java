@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void OnFinishSettingFormListener() {
-        //Log.d( LOG_TAG, "OnFinishSettingFormListener() start." );
+        Log.d( LOG_TAG, "OnFinishSettingFormListener() start." );
 
         setToolbar();
 
