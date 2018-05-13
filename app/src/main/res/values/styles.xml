@@ -16,4 +16,19 @@
         <item name="android:textColorSecondary">@color/white</item>
     </style>
 
+    <style name="MySettingFormSeparator">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">#ff0000</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:layout_marginTop">5dp</item>
+    </style>
+
+    <style name="MySettingFormSeparator_sub">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">#00ff00</item>
+        <item name="android:orientation">horizontal</item>
+    </style>
+
 </resources>
