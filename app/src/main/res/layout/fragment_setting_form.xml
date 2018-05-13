@@ -1,15 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<android.support.constraint.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/setting_form"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layout_margin="5dp"
+    android:background="#b0c4de"
     tools:context=".FragmentSettingForm">
 
-    <TextView
+    <LinearLayout
+        android:id="@+id/set_format"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/hello_blank_fragment"
-        android:textSize="@dimen/textSize_medium"/>
+        android:clickable="true"
+        android:focusable="true">
 
-</ScrollView>
+        <include layout="@layout/setting_item"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/separator_1"
+        style="@style/MySettingFormSeparator"
+        app:layout_constraintTop_toBottomOf="@id/set_format"/>
+
+    <LinearLayout
+        android:id="@+id/set_auto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintTop_toBottomOf="@id/separator_1">
+
+        <include layout="@layout/setting_item_with_switch"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/separator_2"
+        style="@style/MySettingFormSeparator"
+        app:layout_constraintTop_toBottomOf="@id/set_auto"/>
+
+    <LinearLayout
+        android:id="@+id/set_bluetooth"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintTop_toBottomOf="@id/separator_2">
+
+        <include layout="@layout/setting_item_with_switch"/>
+
+    </LinearLayout>
+
+<!-- switch view を置く行と置かない行が混在するので使用しない。両方のイベントを適宜取る、というやり方を思いつかない。
+    <ListView
+        android:id="@+id/list_setting_items"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="true"/>
+-->
+
+<!--う～ん、ベタで記述すると自分の頭ではレイアウトのイメージが判りにくいなぁ・・・・。個別に定義して合体する方がイメージし易い気がする。-->
+
+
+</android.support.constraint.ConstraintLayout>

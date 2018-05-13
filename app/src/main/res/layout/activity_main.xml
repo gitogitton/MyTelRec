@@ -11,7 +11,7 @@
     <android.support.v7.widget.Toolbar
         android:id="@+id/my_toolbar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="?android:attr/actionBarSize"
         android:theme="@style/AppTheme.Toolbar" >
 
     <LinearLayout
@@ -41,7 +41,7 @@
     <LinearLayout
         android:id="@+id/top_view"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_below="@+id/my_toolbar"
         android:orientation="horizontal">
         <!--ここへ fragment を動的に放り込む-->

@@ -20,14 +20,21 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 import static android.app.PendingIntent.FLAG_ONE_SHOT;
 
-public class MainActivity extends AppCompatActivity
-        implements FragmentMain.OnFragmentInteractionListener, FragmentSettingForm.OnFinishSettingFormListener {
+public class MainActivity extends AppCompatActivity implements FragmentSettingForm.OnFinishSettingFormListener {
 
     private final String LOG_TAG = getClass().getSimpleName();
+    private final String SETTING_FILE_NAME = "setting.csv"; //format : [file format],[auto start],[use bluetooth]
+    private SettingData mSettingData = new SettingData();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,32 +43,29 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
 
         setToolbar();
-//        adjustToolbarItemPos();
         setToolbarItemsListener();
+
+        restoreSettingData();
 
         if ( savedInstanceState == null ) {
             FragmentManager fragmentManager = getSupportFragmentManager();
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
             FragmentMain main = FragmentMain.newInstance("", "");
             fragmentTransaction.add(R.id.top_view, main);
-//            fragmentTransaction.addToBackStack(null);
+            //fragmentTransaction.addToBackStack(null);
             fragmentTransaction.commit();
         }
     }
 
     @Override
-    public void onFragmentInteraction(Uri uri) {
-        Log.d( LOG_TAG, "onFragmentInteraction() start." );
-    }
-
-    @Override
-    public void OnFinishSettingFormListener() {
+    public void OnFinishSettingForm() {
         Log.d( LOG_TAG, "OnFinishSettingFormListener() start." );
-
-        setToolbar();
 
         LinearLayout toolbarItem = findViewById( R.id.toolbar_item );
         toolbarItem.setVisibility( View.VISIBLE );
+
+        setToolbar();
+        setToolbarItemsListener();
     }
 
     //
@@ -106,15 +110,15 @@ public class MainActivity extends AppCompatActivity
 
         Point point = new Point();
         this.getWindowManager().getDefaultDisplay().getRealSize( point );
-        Log.d( "test", "point.(x,y)->"+"("+point.x+","+point.y+")" );
+        //Log.d( "test", "point.(x,y)->"+"("+point.x+","+point.y+")" );
 
         int orientation = getResources().getConfiguration().orientation;
         if ( orientation == Configuration.ORIENTATION_PORTRAIT ) { // 縦向き
             marginStart = (int) ( point.x * 0.4);
-            Log.d( LOG_TAG, "向き：縦！！"+marginStart );
+            //Log.d( LOG_TAG, "向き：縦！！"+marginStart );
         } else {
             marginStart = (int) ( point.x * 0.7);
-            Log.d( LOG_TAG, "向き：横！！"+marginStart );
+            //Log.d( LOG_TAG, "向き：横！！"+marginStart );
         }
 
         Toolbar toolbar = findViewById( R.id.my_toolbar );
@@ -145,10 +149,14 @@ public class MainActivity extends AppCompatActivity
     private void showSettingForm() {
 
         LinearLayout toolbarItem = findViewById( R.id.toolbar_item );
-        toolbarItem.setVisibility( View.INVISIBLE );
+        toolbarItem.setVisibility( View.GONE );
 
         FragmentSettingForm settingForm = FragmentSettingForm.newInstance( "", "" );
-//        FragmentSettingForm settingForm = new FragmentSettingForm();
+
+        Bundle args = new Bundle();
+        args.putSerializable( "SETTING", mSettingData );
+        settingForm.setArguments( args );
+
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         fragmentTransaction.replace( R.id.top_view, settingForm );
@@ -185,5 +193,82 @@ public class MainActivity extends AppCompatActivity
             //
             Log.d( LOG_TAG, "" );
         }
+    }
+    private void restoreSettingData() {
+
+        mSettingData = readConfigFromFile();
+
+/*
+        TextView textView = findViewById( R.id.set_format ).findViewById( R.id.text_explain );
+        Switch autoSart = findViewById( R.id.set_auto ).findViewById( R.id.switch_status );
+        Switch bluetooth = findViewById( R.id.set_bluetooth ).findViewById( R.id.switch_status );
+
+        textView.setText( setting.getFormat() );
+        autoSart.setChecked( setting.isAutoStart() );
+        bluetooth.setChecked( setting.isBluetooth() );
+*/
+    }
+
+    private SettingData readConfigFromFile() {
+
+        SettingData setting = new SettingData();
+
+        String fileName = SETTING_FILE_NAME;
+        FileInputStream inputStream = null;
+        BufferedReader bufferedReader = null;
+
+        File f = new File( this.getFilesDir()+"/"+fileName );
+        if ( ! f.exists() ) { //無ければデフォルト値を設定して終了。
+            setting.setFormat( "WAV" );
+            setting.setAutoStart( false );
+            setting.setBluetooth( false );
+            return setting;
+        }
+
+        try {
+            inputStream = this.openFileInput( fileName );
+            bufferedReader = new BufferedReader( new InputStreamReader( inputStream ) );
+            String readData = bufferedReader.readLine();
+            if ( readData == null ) {
+                setting.setFormat( "WAV" );
+                setting.setAutoStart( false );
+                setting.setBluetooth( false );
+                return setting;
+            }
+
+            String[] item = readData.split( "," );
+            if ( item.length <= 0 ) { //set default value
+                setting.setFormat( "WAV" );
+                setting.setAutoStart( false );
+                setting.setBluetooth( false );
+            } else {
+                for ( int i=0; i<item.length; i++ ) {
+                    switch ( i ) {
+                        case 0 :
+                            setting.setFormat( item[i] );
+                            break;
+                        case 1 :
+                            setting.setAutoStart( item[i].equals( "1" ) );
+                            break;
+                        case 2 :
+                            setting.setBluetooth( item[i].equals( "1" ) );
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if ( inputStream != null ) inputStream.close();
+                if ( bufferedReader != null ) bufferedReader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return setting;
     }
 }
