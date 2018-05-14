@@ -51,6 +51,9 @@ public class MainActivity extends AppCompatActivity implements FragmentSettingFo
             FragmentManager fragmentManager = getSupportFragmentManager();
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
             FragmentMain main = FragmentMain.newInstance("", "");
+            Bundle args = new Bundle();
+            args.putSerializable( "SETTING", mSettingData ); //設定ファイルを読み込んだ結果を渡す
+            main.setArguments( args );
             fragmentTransaction.add(R.id.top_view, main);
             //fragmentTransaction.addToBackStack(null);
             fragmentTransaction.commit();
@@ -197,16 +200,6 @@ public class MainActivity extends AppCompatActivity implements FragmentSettingFo
     private void restoreSettingData() {
 
         mSettingData = readConfigFromFile();
-
-/*
-        TextView textView = findViewById( R.id.set_format ).findViewById( R.id.text_explain );
-        Switch autoSart = findViewById( R.id.set_auto ).findViewById( R.id.switch_status );
-        Switch bluetooth = findViewById( R.id.set_bluetooth ).findViewById( R.id.switch_status );
-
-        textView.setText( setting.getFormat() );
-        autoSart.setChecked( setting.isAutoStart() );
-        bluetooth.setChecked( setting.isBluetooth() );
-*/
     }
 
     private SettingData readConfigFromFile() {
@@ -219,7 +212,7 @@ public class MainActivity extends AppCompatActivity implements FragmentSettingFo
 
         File f = new File( this.getFilesDir()+"/"+fileName );
         if ( ! f.exists() ) { //無ければデフォルト値を設定して終了。
-            setting.setFormat( "WAV" );
+            setting.setFormat( FragmentSelectFormat.FormatList.WAV.getValue() ); // 遠い・・・、enum 、外に出した方がいい・・・
             setting.setAutoStart( false );
             setting.setBluetooth( false );
             return setting;
@@ -229,16 +222,16 @@ public class MainActivity extends AppCompatActivity implements FragmentSettingFo
             inputStream = this.openFileInput( fileName );
             bufferedReader = new BufferedReader( new InputStreamReader( inputStream ) );
             String readData = bufferedReader.readLine();
-            if ( readData == null ) {
-                setting.setFormat( "WAV" );
+            if ( readData == null ) { // ファイルが壊れてる？？：デフォルト値を設定
+                setting.setFormat( FragmentSelectFormat.FormatList.WAV.getValue() ); // 遠い・・・、enum 、外に出した方がいい・・・
                 setting.setAutoStart( false );
                 setting.setBluetooth( false );
                 return setting;
             }
 
             String[] item = readData.split( "," );
-            if ( item.length <= 0 ) { //set default value
-                setting.setFormat( "WAV" );
+            if ( item.length <= 0 ) { // ファイルが壊れてる？？：デフォルト値を設定
+                setting.setFormat( FragmentSelectFormat.FormatList.WAV.getValue() ); // 遠い・・・、enum 、外に出した方がいい・・・
                 setting.setAutoStart( false );
                 setting.setBluetooth( false );
             } else {

@@ -39,23 +39,25 @@ import java.io.IOException;
 public class FragmentSettingForm extends Fragment {
 
     private final String LOG_TAG = getClass().getSimpleName();
-
+    private final int REQ_CODE_SELECT_FORMAT = 0;
     private final String SETTING_FILE_NAME = "setting.csv"; //format : [file format],[auto start],[use bluetooth]
-    private View mView;
 
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "SETTING";
     private static final String ARG_PARAM2 = "param2";
 
+    private View mView;
     private SettingData mSetting;
     private String mParam2;
-
     private Context mContext;
-    private OnFinishSettingFormListener mListener;
 
+    //
+    // interface
+    //
     public interface OnFinishSettingFormListener {
         void OnFinishSettingForm();
     }
+    private OnFinishSettingFormListener mListener;
 
     public FragmentSettingForm() {
         // Required empty public constructor
@@ -80,6 +82,7 @@ public class FragmentSettingForm extends Fragment {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        Log.d( LOG_TAG, "FragmentSettingForm#onCreate() start." );
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             mSetting = (SettingData) getArguments().getSerializable( ARG_PARAM1 );
@@ -89,6 +92,7 @@ public class FragmentSettingForm extends Fragment {
 
     @Override
     public void onAttach(Context context) {
+        Log.d( LOG_TAG, "FragmentSettingForm#onAttach() start." );
         mContext = context;
         super.onAttach(context);
         if ( context instanceof OnFinishSettingFormListener ) {
@@ -102,6 +106,7 @@ public class FragmentSettingForm extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        Log.d( LOG_TAG, "FragmentSettingForm#onCreateView() start." );
 
         setActionBar();
 
@@ -131,6 +136,7 @@ public class FragmentSettingForm extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        Log.d( LOG_TAG, "FragmentSettingForm#onViewCreated() start." );
 
         LinearLayout formatArea = view.findViewById( R.id.set_format );
         formatArea.setOnClickListener(new View.OnClickListener() {
@@ -166,6 +172,18 @@ public class FragmentSettingForm extends Fragment {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        Log.d( LOG_TAG, "FragmentSettingForm#onStart() start." );
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.d( LOG_TAG, "FragmentSettingForm#onResume() start." );
+    }
+
+    @Override
     public void onDetach() {
         mListener = null;
         super.onDetach();
@@ -179,7 +197,7 @@ public class FragmentSettingForm extends Fragment {
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
-        inflater.inflate( R.menu.menu_setting, menu );
+//        inflater.inflate( R.menu.menu_setting, menu );
     }
 
     @Override
@@ -212,10 +230,20 @@ public class FragmentSettingForm extends Fragment {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.d( LOG_TAG, "FragmentSettingForm#onActivityResult() start." );
+//        super.onActivityResult(requestCode, resultCode, data);
 
-        setActionBar();
-        super.onActivityResult(requestCode, resultCode, data);
+        if ( requestCode == REQ_CODE_SELECT_FORMAT ) {
+            String fileType = data.getStringExtra( "FILETYPE" );
+            Log.d( LOG_TAG, "FragmentSettingForm#onActivityResult() start. [" + fileType + "]" );
+            //戻ってきたファイルタイプを表示する。
+            mSetting.setFormat( fileType );
+            LinearLayout formatArea = mView.findViewById( R.id.set_format );
+
+            TextView textView = formatArea.findViewById( R.id.text_explain );
+            textView.setText( fileType );
+
+            setActionBar();
+        }
     }
 
     //
@@ -224,7 +252,10 @@ public class FragmentSettingForm extends Fragment {
     private void showSelectFormatForm() {
         Log.d( LOG_TAG, "showSelectFormatForm() start." );
 
-        FragmentSelectFormat selectFormat = FragmentSelectFormat.newInstance( this, 0 );
+        FragmentSelectFormat selectFormat = FragmentSelectFormat.newInstance( this, REQ_CODE_SELECT_FORMAT );
+        Bundle args = new Bundle();
+        args.putString( "SETTING", mSetting.getFormat() );
+        selectFormat.setArguments( args );
         FragmentManager fragmentManager = getFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         fragmentTransaction.replace( R.id.top_view, selectFormat );
