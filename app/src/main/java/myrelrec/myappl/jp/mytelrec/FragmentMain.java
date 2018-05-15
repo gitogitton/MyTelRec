@@ -6,26 +6,33 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import android.widget.ListView;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link FragmentMain.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link FragmentMain#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class FragmentMain extends Fragment {
 
     private final String LOG_TAG = getClass().getSimpleName();
+    private final String SETTING_FILE_NAME = "setting.csv"; //format : [file format],[auto start],[use bluetooth]
 
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -36,20 +43,12 @@ public class FragmentMain extends Fragment {
 
     private Context mContext;
     private View mView;
+    private SettingData mSettingData = new SettingData();
 
     public FragmentMain() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment FragmentMain.
-     */
-    // TODO: Rename and change types and number of parameters
     public static FragmentMain newInstance(String param1, String param2) {
         FragmentMain fragment = new FragmentMain();
         Bundle args = new Bundle();
@@ -73,12 +72,17 @@ public class FragmentMain extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         mView = inflater.inflate(R.layout.fragment_main, container, false);
+
+        setActionBar();
+        setHasOptionsMenu( true );
+
         return mView;
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         showRecordingFileList();
+        restoreSettingData();
     }
 
     @Override
@@ -88,22 +92,39 @@ public class FragmentMain extends Fragment {
     }
 
     @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+
+        inflater.inflate( R.menu.menu_main, menu );
+
+        MenuItem item = menu.findItem( R.id.menu_activate );
+        SwitchCompat switchCompat = (SwitchCompat) item.getActionView();
+        switchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                Log.d( LOG_TAG, "onCheckedChanged()" );
+            }
+        });
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch ( item.getItemId() ) {
+            case R.id.menu_setting :
+                Log.d( LOG_TAG, "select menu_setting." );
+                showSettingForm();
+                break;
+            default:
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     public void onDetach() {
         super.onDetach();
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
 
@@ -147,5 +168,93 @@ public class FragmentMain extends Fragment {
         arrayList.addAll( Arrays.asList(itemData) );
 
         return arrayList;
+    }
+
+    private void setActionBar() {
+        ActionBar actionBar = ( (AppCompatActivity)getActivity() ).getSupportActionBar();
+        actionBar.setTitle( R.string.app_name );
+    }
+
+    private void showSettingForm() {
+
+        FragmentSettingForm settingForm = FragmentSettingForm.newInstance( "", "" );
+
+        Bundle args = new Bundle();
+        args.putSerializable( "SETTING", mSettingData );
+        settingForm.setArguments( args );
+
+        FragmentManager fragmentManager = getFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.replace( R.id.top_view, settingForm );
+        fragmentTransaction.addToBackStack( null );
+        fragmentTransaction.commit();
+    }
+
+    private void restoreSettingData() {
+
+        mSettingData = readConfigFromFile();
+    }
+
+    private SettingData readConfigFromFile() {
+
+        SettingData setting = new SettingData();
+
+        String fileName = SETTING_FILE_NAME;
+        FileInputStream inputStream = null;
+        BufferedReader bufferedReader = null;
+
+        File f = new File( mContext.getFilesDir()+"/"+fileName );
+        if ( ! f.exists() ) { //無ければデフォルト値を設定して終了。
+            setting.setFormat( FragmentSelectFormat.FormatList.WAV.getValue() ); // 遠い・・・、enum 、外に出した方がいい・・・
+            setting.setAutoStart( false );
+            setting.setBluetooth( false );
+            return setting;
+        }
+
+        try {
+            inputStream = mContext.openFileInput( fileName );
+            bufferedReader = new BufferedReader( new InputStreamReader( inputStream ) );
+            String readData = bufferedReader.readLine();
+            if ( readData == null ) { // ファイルが壊れてる？？：デフォルト値を設定
+                setting.setFormat( FragmentSelectFormat.FormatList.WAV.getValue() ); // 遠い・・・、enum 、外に出した方がいい・・・
+                setting.setAutoStart( false );
+                setting.setBluetooth( false );
+                return setting;
+            }
+
+            String[] item = readData.split( "," );
+            if ( item.length <= 0 ) { // ファイルが壊れてる？？：デフォルト値を設定
+                setting.setFormat( FragmentSelectFormat.FormatList.WAV.getValue() ); // 遠い・・・、enum 、外に出した方がいい・・・
+                setting.setAutoStart( false );
+                setting.setBluetooth( false );
+            } else {
+                for ( int i=0; i<item.length; i++ ) {
+                    switch ( i ) {
+                        case 0 :
+                            setting.setFormat( item[i] );
+                            break;
+                        case 1 :
+                            setting.setAutoStart( item[i].equals( "1" ) );
+                            break;
+                        case 2 :
+                            setting.setBluetooth( item[i].equals( "1" ) );
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if ( inputStream != null ) inputStream.close();
+                if ( bufferedReader != null ) bufferedReader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return setting;
     }
 }
