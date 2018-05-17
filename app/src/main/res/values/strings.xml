@@ -12,7 +12,7 @@
     <string name="file_format">録音するファイル形式</string>
     <string name="auto_start">自動起動</string>
     <string name="bluetooth">ブルートゥース</string>
-    <string name="auto_start_explain">アプリ起動で録音モードにする場合ＯＮ</string>
+    <string name="auto_start_explain">録音を有効にする場合ＯＮ</string>
     <string name="bluetooth_explain">Bluetoothを使用する場合ＯＮ</string>
 
     <!-- TODO: Remove or change this placeholder text -->
