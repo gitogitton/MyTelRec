@@ -25,7 +25,7 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
         Log.d( LOG_TAG, "onReceive() start." );
 
         mContext = context;
-        mMyPhoneStateListener = new MyPhoneStateListener( mContext );
+        mMyPhoneStateListener = new MyPhoneStateListener( mContext, "" ); //5/23: 今はこのクラスは使ってないので""で逃げておく。
 
         try {
 

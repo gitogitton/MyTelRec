@@ -18,9 +18,12 @@ public class MyPhoneStateListener extends PhoneStateListener {
     private boolean mRecNow = false;
     private MediaRecorder mMediaRecorder = new MediaRecorder();
     private Context mContext;
+    private String mFileType;
 
-    public MyPhoneStateListener( Context context ) {
+    public MyPhoneStateListener( Context context, String fileType ) {
         mContext = context;
+        mFileType = fileType;
+        Log.d( LOG_TAG, "fileType->" + mFileType );
     }
 
     @Override
@@ -85,7 +88,7 @@ public class MyPhoneStateListener extends PhoneStateListener {
         int second = calendar.get( Calendar.SECOND );
 
         // YYYYMMDDhhmmss_tel.mp4 (localが関係してくるなんて・・・)
-        fileName = String.format( Locale.US, "%04d%02d%02d%02d%02d%02d_tel.mp4", year, month, dayOfMonth, hourOfDay, minute, second );
+        fileName = String.format( Locale.US, "%04d%02d%02d%02d%02d%02d_tel.", mFileType, year, month, dayOfMonth, hourOfDay, minute, second );
         Log.d( LOG_TAG, "file name->"+fileName );
 
         return fileName;

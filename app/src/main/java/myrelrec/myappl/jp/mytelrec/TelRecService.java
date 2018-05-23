@@ -26,10 +26,12 @@ import java.io.File;
 public class TelRecService extends Service {
 
     private final String LOG_TAG = getClass().getSimpleName();
+    private final String KEY_FILE_TYPE = "key_fileType"; //どっか共通に出来る？（define in FragmentMain）
 
     private ServiceHandler mServiceHandler;
+    private String mIntentFileType;
 
-    private MyPhoneStateListener mMyListener = new MyPhoneStateListener( this );
+    private MyPhoneStateListener mMyListener = null;
 
     // Handler that receives messages from the thread
     private final class ServiceHandler extends Handler {
@@ -90,6 +92,9 @@ public class TelRecService extends Service {
         msg.arg1 = startId;
         mServiceHandler.sendMessage( msg );
 
+        mIntentFileType = intent.getStringExtra( KEY_FILE_TYPE );
+        Log.d( LOG_TAG, "mIntentFileType->" + mIntentFileType );
+
         // If we get killed, after returning from here, restart　、、復活してくれる。（と理解してるけれど）
         return START_STICKY;
     }
@@ -117,8 +122,9 @@ public class TelRecService extends Service {
         TelephonyManager telephonyManager = (TelephonyManager) this.getSystemService( Context.TELEPHONY_SERVICE );
         //リスナーの登録
         if ( telephonyManager != null ) {
+             mMyListener = new MyPhoneStateListener( this, mIntentFileType );
             telephonyManager.listen ( mMyListener, PhoneStateListener.LISTEN_CALL_STATE ); // Listen for changes to the device call state. //
-            Log.d( LOG_TAG, "Telephony Listener set !" );
+            Log.d( LOG_TAG, "Telephony Listener set ! listener addr->"+mMyListener );
         } else {
             Log.d( LOG_TAG, "Telephony Listener Not set !" );
         }
@@ -130,8 +136,9 @@ public class TelRecService extends Service {
         TelephonyManager telephonyManager = (TelephonyManager) this.getSystemService( Context.TELEPHONY_SERVICE );
         //リスナーの登録 解除
         if ( telephonyManager != null ) {
-            Log.d( LOG_TAG, "Telephony Listener cancel !" );
+            Log.d( LOG_TAG, "Telephony Listener cancel ! listener addr->"+mMyListener );
             telephonyManager.listen ( mMyListener, PhoneStateListener.LISTEN_NONE ); // Listen for changes to the device call state. //
+            mMyListener = null;
         } else {
             Log.d( LOG_TAG, "Telephony Listener Not cancel !" );
         }

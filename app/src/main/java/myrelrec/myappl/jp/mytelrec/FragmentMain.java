@@ -1,11 +1,9 @@
 package myrelrec.myappl.jp.mytelrec;
 
 import android.app.ActivityManager;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -14,7 +12,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
@@ -38,13 +35,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.List;
 
 public class FragmentMain extends Fragment {
 
     private final String LOG_TAG = getClass().getSimpleName();
     private final String SETTING_FILE_NAME = "setting.csv"; //format : [file format],[auto start],[use bluetooth]
-    private final String KEY_RECORD = "key_record";
+    private final String KEY_FILE_TYPE = "key_fileType";
 
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -56,6 +52,7 @@ public class FragmentMain extends Fragment {
     private Context mContext;
     private View mView;
     private SettingData mSettingData = new SettingData();
+    private String mIntentFileType;
 
 //とりあえずコメント
 //    private MyBroadcastReceiver mMyReceiver = new MyBroadcastReceiver();
@@ -235,7 +232,8 @@ public class FragmentMain extends Fragment {
         // else if the service does not exist null is returned. (wrote by google site)
 //        Intent intent = new Intent( mContext, TelRecIntentService.class );
         Intent intent = new Intent( mContext, TelRecService.class );
-        intent.putExtra( KEY_RECORD,  true );
+        mIntentFileType = mSettingData.getFormat();
+        intent.putExtra( KEY_FILE_TYPE, mIntentFileType);
         ComponentName componentName = mContext.startService( intent );
         if ( componentName == null ) {
             Log.d( LOG_TAG, "Service doesn't exist." );
@@ -262,7 +260,7 @@ public class FragmentMain extends Fragment {
 
 //        Intent intent = new Intent( mContext, TelRecIntentService.class );
         Intent intent = new Intent( mContext, TelRecService.class );
-        intent.putExtra( KEY_RECORD, false );
+        intent.putExtra(KEY_FILE_TYPE, mIntentFileType);
         // If there is a service matching the given Intent that is already running,
         // then it is stopped and true is returned;
         // else false is returned.  (wrote by google site)
