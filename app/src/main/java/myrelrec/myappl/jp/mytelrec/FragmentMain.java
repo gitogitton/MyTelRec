@@ -304,11 +304,10 @@ public class FragmentMain extends Fragment {
                 } else {
                     Log.d( LOG_TAG, "mediaPlayter start." );
                     mMediaPlayer = MediaPlayer.create( mContext, Uri.parse( "/storage/sdcard0/telrec/"+item.getPhoneNumber() ) );
-                    mMediaPlayer.start();
                     mMediaPlayer.setVolume( (float) 1.0, (float)1.0 ); // 0.0 - 1.0
                     mMediaPlayer.setLooping( false );
+                    mMediaPlayer.start();
                 }
-//                mMediaPlayer.setVolume(    );
             }
         });
     }
@@ -320,7 +319,7 @@ public class FragmentMain extends Fragment {
         File fileList = new File( "/storage/sdcard0/telrec/" );
         String[] dirList = fileList.list();
         if ( dirList == null || dirList.length <= 0 ) {
-            return null;
+            return arrayList;
         }
 
         for ( String item : dirList ) {
