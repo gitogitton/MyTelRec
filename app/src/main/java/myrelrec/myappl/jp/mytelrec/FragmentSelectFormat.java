@@ -25,13 +25,8 @@ public class FragmentSelectFormat extends Fragment {
 
     public enum FormatList { // 初めて使ってみた・・・
         WAV( "WAV" ),
-        AAC_ADTS( "AAC ADTS" ),
-        AMR_NB( "AMR NB" ),
-        AMR_WB( "AMR WB" ),
-        MPEG2( "MPEG2" ),
-        MPEG4( "MPEG4" ),
-        GPP_3( "3GPP" ),
-        VP8( "VP8" ) ;
+        MP3( "MP3" ),
+        MP4( "MP4" );
 
         private final String type;
         private final String DEFAULT_TYPE = "WAV";
