@@ -4,25 +4,44 @@
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <!--android.permission.RECORD_AUDIO         オーディオの録音（マイク）-->
+    <!--android.permission.READ_PHONE_STATE     携帯のステータスとIDの読み取り : [Dangerous]-->
+    <!--android.permission.PROCESS_OUTGOING_CALLS   発信を管理（番号変更とか切ってしまうとか）、、→これはいらないだろう。-->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+<!--    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />-->
 
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
+        android:supportsRtl="false"
         android:theme="@style/AppTheme">
 
         <service android:name=".TelRecService"/>
 
-        <activity android:name=".MainActivity">
+        <activity
+            android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- https://developer.android.com/guide/components/broadcasts -->
+        <!-- android.intent.action.PHONE_STATE          電話のステータス（待ち受け／呼び出し／話し中）-->
+        <!-- android.intent.action.NEW_OUTGOING_CALL    発信の際の電話番号取得に必要（？）-->
+<!--
+        <receiver android:name=".MyBroadcastReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE"/>
+                <action android:name="android.intent.action.NEW_OUTGOING_CALL"/>
+            </intent-filter>
+        </receiver>
+-->
     </application>
 
 </manifest>

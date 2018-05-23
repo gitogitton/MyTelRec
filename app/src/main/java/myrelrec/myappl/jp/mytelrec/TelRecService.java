@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -14,6 +15,9 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
 import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -23,8 +27,9 @@ public class TelRecService extends Service {
 
     private final String LOG_TAG = getClass().getSimpleName();
 
-    private Looper mServiceLooper;
     private ServiceHandler mServiceHandler;
+
+    private MyPhoneStateListener mMyListener = new MyPhoneStateListener( this );
 
     // Handler that receives messages from the thread
     private final class ServiceHandler extends Handler {
@@ -37,8 +42,8 @@ public class TelRecService extends Service {
 
             Context context = getApplicationContext();
 
-            //通知を発行するmanager
-            NotificationManager nManager = (NotificationManager) context.getSystemService( Context.NOTIFICATION_SERVICE );
+//            //通知を発行するmanager
+//            NotificationManager nManager = (NotificationManager) context.getSystemService( Context.NOTIFICATION_SERVICE );
 
             //通知エリアをタップされた時に起動するアプリを設定
             Intent notifyIntent = new Intent();
@@ -55,38 +60,35 @@ public class TelRecService extends Service {
 
             startForeground( 111, builder.build() ); // id=0はダメ！！
 
-            startRecorder();
-
-//            try {
-//                Thread.sleep( 30000 );
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+            setMyListener(); //PhoneStateListener 登録
        }
     }
 
     @Override
     public void onCreate() {
 
+        Log.d( LOG_TAG, "onCreate() started !" );
+
 //        super.onCreate();
 
         HandlerThread thread = new HandlerThread( "ServiceStartArguments", Process.PHONE_UID );
         thread.start();
 
-        mServiceLooper = thread.getLooper();
-        mServiceHandler = new ServiceHandler( mServiceLooper );
+        Looper serviceLooper = thread.getLooper();
+        mServiceHandler = new ServiceHandler( serviceLooper );
 
-        Log.d( LOG_TAG, "onCreate() started !" );
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Toast.makeText( this, "TelRecService starting", Toast.LENGTH_SHORT ).show();
+
+        Log.d( LOG_TAG, "onStartCommand() started !" );
+
 //        return super.onStartCommand(intent, flags, startId);
 
         Message msg = mServiceHandler.obtainMessage();
         msg.arg1 = startId;
-        mServiceHandler.sendMessage(msg);
+        mServiceHandler.sendMessage( msg );
 
         // If we get killed, after returning from here, restart　、、復活してくれる。（と理解してるけれど）
         return START_STICKY;
@@ -95,50 +97,44 @@ public class TelRecService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+        Log.d( LOG_TAG, "onBind() started !" );
         return null; //他からのバインドは不許可
     }
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
         Log.d( LOG_TAG, "onDestroy()" );
+        resetMyListener(); //PhoneStateListener 解除
+        super.onDestroy();
     }
 
     //
     // private methods
     //
-    private void startRecorder() {
+    private void setMyListener() {
 
-        //録音
-        MediaRecorder mediarecorder; //録音用のメディアレコーダークラス
-        final String filePath = "/storage/sdcard0/telrec/sample.mp4"; //録音用のファイルパス
-
-        try{
-            File mediafile = new File(filePath);
-            if( mediafile.exists() ) {
-                //ファイルが存在する場合は削除する
-                mediafile.delete();
-            }
-            mediafile = null;
-            mediarecorder = new MediaRecorder();
-            //音声ソースをマイクに指定
-//            mediarecorder.setAudioSource( MediaRecorder.AudioSource.MIC );
-            mediarecorder.setAudioSource( MediaRecorder.AudioSource.VOICE_CALL ); //電話の受話送話両方、、だと思う。
-            //出力フォーマットに DEFAULT を指定（DEFAULTって何？WAV？）
-            mediarecorder.setOutputFormat( MediaRecorder.OutputFormat.MPEG_4 );
-            //エンコーダーも Default にする  ???
-            mediarecorder.setAudioEncoder( MediaRecorder.AudioEncoder.DEFAULT );
-            //ファイルの保存先を指定
-            mediarecorder.setOutputFile( filePath );
-            //録音の準備をする
-            mediarecorder.prepare();
-            //録音開始
-            Log.d( LOG_TAG, "recorder start !" );
-            mediarecorder.start();
-
-        } catch(Exception e){
-            e.printStackTrace();
+        //TelephonyManagerの生成
+        TelephonyManager telephonyManager = (TelephonyManager) this.getSystemService( Context.TELEPHONY_SERVICE );
+        //リスナーの登録
+        if ( telephonyManager != null ) {
+            telephonyManager.listen ( mMyListener, PhoneStateListener.LISTEN_CALL_STATE ); // Listen for changes to the device call state. //
+            Log.d( LOG_TAG, "Telephony Listener set !" );
+        } else {
+            Log.d( LOG_TAG, "Telephony Listener Not set !" );
         }
+
     }
 
+    private void resetMyListener() {
+
+        TelephonyManager telephonyManager = (TelephonyManager) this.getSystemService( Context.TELEPHONY_SERVICE );
+        //リスナーの登録 解除
+        if ( telephonyManager != null ) {
+            Log.d( LOG_TAG, "Telephony Listener cancel !" );
+            telephonyManager.listen ( mMyListener, PhoneStateListener.LISTEN_NONE ); // Listen for changes to the device call state. //
+        } else {
+            Log.d( LOG_TAG, "Telephony Listener Not cancel !" );
+        }
+
+    }
 }

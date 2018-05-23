@@ -1,9 +1,11 @@
 package myrelrec.myappl.jp.mytelrec;
 
 import android.app.ActivityManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -12,9 +14,12 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -25,6 +30,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.CompoundButton;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -38,6 +44,7 @@ public class FragmentMain extends Fragment {
 
     private final String LOG_TAG = getClass().getSimpleName();
     private final String SETTING_FILE_NAME = "setting.csv"; //format : [file format],[auto start],[use bluetooth]
+    private final String KEY_RECORD = "key_record";
 
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -48,8 +55,13 @@ public class FragmentMain extends Fragment {
 
     private Context mContext;
     private View mView;
-    private SwitchCompat mSwitchCompat;
     private SettingData mSettingData = new SettingData();
+
+//とりあえずコメント
+//    private MyBroadcastReceiver mMyReceiver = new MyBroadcastReceiver();
+
+    private MyPhoneStateListener mMyListener = null;
+    private TelephonyManager mTelephonyManager = null;
 
     private MediaPlayer mMediaPlayer = null;
 
@@ -104,13 +116,55 @@ public class FragmentMain extends Fragment {
     }
 
     @Override
+    public void onDetach() {
+//        Log.d( LOG_TAG, "MyBoadcastReceiver is un-registered ! (onDetach)" );
+//        LocalBroadcastManager.getInstance( mContext ).unregisterReceiver( mMyReceiver );
+        super.onDetach();
+    }
+
+    @Override
+    public void onStart() {
+        Log.d( LOG_TAG, "onStart() start." );
+        super.onStart();
+    }
+
+    @Override
+    public void onResume() {
+        Log.d( LOG_TAG, "onResume() start." );
+        super.onResume();
+
+        //リスナーの登録
+        if ( mTelephonyManager != null ) {
+            mTelephonyManager.listen ( mMyListener, PhoneStateListener.LISTEN_CALL_STATE ); // Listen for changes to the device call state. //
+        }
+    }
+
+    @Override
+    public void onPause() {
+        Log.d( LOG_TAG, "onPause() start." );
+        super.onPause();
+
+        //リスナーの登録 解除
+        if ( mTelephonyManager != null ) {
+            mTelephonyManager.listen ( mMyListener, PhoneStateListener.LISTEN_NONE ); // Listen for changes to the device call state. //
+        }
+    }
+
+    @Override
+    public void onStop() {
+        Log.d( LOG_TAG, "onStop() start." );
+        super.onStop();
+    }
+
+    @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 
         inflater.inflate( R.menu.menu_main, menu );
 
         MenuItem item = menu.findItem( R.id.menu_activate );
         SwitchCompat switchCompat = (SwitchCompat) item.getActionView();
-        switchCompat.setChecked( mSettingData.isAutoStart() );
+        boolean isAutoStart = mSettingData.isAutoStart();
+        switchCompat.setChecked( isAutoStart );
         switchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -122,6 +176,10 @@ public class FragmentMain extends Fragment {
                 }
             }
         });
+
+        if ( isAutoStart ) { // autoStart が設定されているときはアプリ起動とともに録音モードに入る。
+            startTelRecService();
+        }
     }
 
     @Override
@@ -135,11 +193,6 @@ public class FragmentMain extends Fragment {
                 break;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
     }
 
     public interface OnFragmentInteractionListener {
@@ -162,6 +215,16 @@ public class FragmentMain extends Fragment {
 
     private void startTelRecService() {
 
+// とりあえずコメント。リスナー置き換え＆キャンセルから始めよう・・
+//        //BroadcastReceiver
+//        IntentFilter intentFilter = new IntentFilter( TelephonyManager.ACTION_PHONE_STATE_CHANGED );  //Broadcast intent action indicating that the call state on the device has changed.
+//        intentFilter.addAction( "android.intent.action.NEW_OUTGOING_CALL" );
+////        mContext.registerReceiver( myReceiver, intentFilter );
+//        LocalBroadcastManager.getInstance( mContext ).registerReceiver( mMyReceiver, intentFilter ); //アプリ内でしか使わないブロードキャスト(その方が安心・・・)
+//
+//        Log.d( LOG_TAG, "MyBroadcastReceiver is registered !" );
+
+//// とりあえずコメント。Broadcastの理解に努めよう。
         //
         //サービス開始処理
         //　 開始出来た場合や既にある場合はその情報が返ってくる。
@@ -172,6 +235,7 @@ public class FragmentMain extends Fragment {
         // else if the service does not exist null is returned. (wrote by google site)
 //        Intent intent = new Intent( mContext, TelRecIntentService.class );
         Intent intent = new Intent( mContext, TelRecService.class );
+        intent.putExtra( KEY_RECORD,  true );
         ComponentName componentName = mContext.startService( intent );
         if ( componentName == null ) {
             Log.d( LOG_TAG, "Service doesn't exist." );
@@ -179,16 +243,26 @@ public class FragmentMain extends Fragment {
         }
 
         Log.d( LOG_TAG, "Service is started." );
+
     }
 
     private void stopTelRecService() {
 
+// とりあえずコメント。リスナー置き換え＆キャンセルから始めよう・・
+//        //BroadcastReceiver
+////        mContext.unregisterReceiver( mMyReceiver ); //Unregister a previously registered BroadcastReceiver. All filters that have been registered for this BroadcastReceiver will be removed.
+//        LocalBroadcastManager.getInstance( mContext ).unregisterReceiver( mMyReceiver );
+//
+//        Log.d( LOG_TAG, "MyBroadcastReceiver is un-registered !" );
+
+//// とりあえずコメント。Broadcastの理解に努めよう。
         //
         //サービス終了処理
         //
 
 //        Intent intent = new Intent( mContext, TelRecIntentService.class );
         Intent intent = new Intent( mContext, TelRecService.class );
+        intent.putExtra( KEY_RECORD, false );
         // If there is a service matching the given Intent that is already running,
         // then it is stopped and true is returned;
         // else false is returned.  (wrote by google site)
@@ -201,32 +275,14 @@ public class FragmentMain extends Fragment {
         Log.d( LOG_TAG, "Service is stopped." );
     }
 
-    private boolean isServiceStarted() {
-        ActivityManager manager = (ActivityManager) mContext.getSystemService( Context.ACTIVITY_SERVICE );
-
-        //
-        // ActivityManager#getRunningServices()
-        // This method was deprecated in API level 26.
-        // ( use bellow)
-        //
-
-        if ( manager == null ) {
-            return false;
-        }
-        List<ActivityManager.RunningServiceInfo> info = manager.getRunningServices( Integer.MAX_VALUE );
-        for ( ActivityManager.RunningServiceInfo serviceInfo : manager.getRunningServices( Integer.MAX_VALUE ) ) {
-//            if ( YourService.class.getName().equals( serviceInfo.service.getClassName() ) ) {
-                return true;
-//            }
-        }
-        return false;
-    }
-
     private void showRecordingFileList() {
+
         ArrayList<ItemData> arrayList = getFileList();
         RecordingFileListAdapter adapter = new RecordingFileListAdapter( mContext, R.layout.file_list_item, arrayList );
 
         ListView listView = mView.findViewById( R.id.list_recordFileList );
+        TextView emptyTextView = mView.findViewById( R.id.emptyTextView );
+        listView.setEmptyView( emptyTextView );
         listView.setAdapter( adapter );
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override

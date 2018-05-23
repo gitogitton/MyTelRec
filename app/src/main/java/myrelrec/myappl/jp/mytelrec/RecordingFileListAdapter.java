@@ -30,7 +30,7 @@ public class RecordingFileListAdapter extends ArrayAdapter<ItemData> {
 
     @Override
     public int getCount() {
-        return mArrayList.size();
+        return mArrayList==null ? 0:mArrayList.size();
     }
 
     @NonNull
@@ -40,7 +40,7 @@ public class RecordingFileListAdapter extends ArrayAdapter<ItemData> {
             convertView = mLayoutInflater.inflate( mResourceId, parent, false );
         }
 
-        ItemData itemData = (ItemData) getItem( position );
+        ItemData itemData = getItem( position );
 
         TextView textDate = convertView.findViewById( R.id.text_date );
         TextView textNumber = convertView.findViewById( R.id.text_phoneNumber );
