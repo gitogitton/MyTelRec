@@ -41,6 +41,7 @@ public class FragmentMain extends Fragment {
     private final String LOG_TAG = getClass().getSimpleName();
     private final String SETTING_FILE_NAME = "setting.csv"; //format : [file format],[auto start],[use bluetooth]
     private final String KEY_FILE_TYPE = "key_fileType";
+    private final String recFilePath = "/storage/sdcard0/telrec";      //録音ファイルの保存先
 
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -314,7 +315,7 @@ public class FragmentMain extends Fragment {
         ArrayList<ItemData> arrayList = new ArrayList<>();
 
 //        File fileList = new File( mContext.getFilesDir() + "/telrec/" );
-        File fileList = new File( "/storage/sdcard0/telrec/" );
+        File fileList = new File( recFilePath + "/" );
         String[] dirList = fileList.list();
         if ( dirList == null || dirList.length <= 0 ) {
             return arrayList;
