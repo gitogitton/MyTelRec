@@ -87,8 +87,12 @@ public class MyPhoneStateListener extends PhoneStateListener {
         int minute = calendar.get( Calendar.MINUTE );
         int second = calendar.get( Calendar.SECOND );
 
-        // YYYYMMDDhhmmss_tel.mp4 (localが関係してくるなんて・・・)
-        fileName = String.format( Locale.US, "%04d%02d%02d%02d%02d%02d_tel.", mFileType, year, month, dayOfMonth, hourOfDay, minute, second );
+
+        EnumFormatList f = EnumFormatList.valueOf( mFileType ); // 無ければ Exception です。
+        String extString = f.getValue();
+
+        // YYYYMMDDhhmmss_tel.mp4 (locationが関係してくるなんて・・・)
+        fileName = String.format( Locale.US, "%04d%02d%02d_%02d%02d%02d_tel.%s", year, month, dayOfMonth, hourOfDay, minute, second, extString );
         Log.d( LOG_TAG, "file name->"+fileName );
 
         return fileName;
@@ -112,13 +116,30 @@ public class MyPhoneStateListener extends PhoneStateListener {
                 }
             }
 
+
             //音声ソースを指定
             //            mediaRecorder.setAudioSource( MediaRecorder.AudioSource.MIC );
             mMediaRecorder.setAudioSource( MediaRecorder.AudioSource.VOICE_CALL ); //電話の受話送話両方、、だと思う。
-            //出力フォーマットに DEFAULT を指定（DEFAULTって何？WAV？）
-            mMediaRecorder.setOutputFormat( MediaRecorder.OutputFormat.MPEG_4 );
-            //エンコーダーも Default にする  ???
-            mMediaRecorder.setAudioEncoder( MediaRecorder.AudioEncoder.DEFAULT );
+
+            //
+            //出力フォーマット      MediaRecorder.setOutputFormat()
+            //   javaDoc ) --> Sets the format of the output file produced during recording.
+            //                  Call this after setAudioSource()/setVideoSource() but before prepare().
+            //
+            //mMediaRecorder.setOutputFormat( MediaRecorder.OutputFormat.MPEG_4 );
+            //
+            //エンコード形式      MediaRecorder.setAudioEncoder()
+            //   javaDoc ) --> Sets the audio encoder to be used for recording.
+            //                  If this method is not called, the output file will not contain an audio track. Call this after setOutputFormat() but before prepare().
+            //
+            if ( mFileType.equals( EnumFormatList.MP4.getValue() ) ) {
+                mMediaRecorder.setOutputFormat( MediaRecorder.OutputFormat.MPEG_4 );
+                mMediaRecorder.setAudioEncoder( MediaRecorder.AudioEncoder.AAC );
+            } else {
+                mMediaRecorder.setOutputFormat( MediaRecorder.OutputFormat.DEFAULT );
+                mMediaRecorder.setAudioEncoder( MediaRecorder.AudioEncoder.DEFAULT );
+            }
+
             //ファイルの保存先を指定
             mMediaRecorder.setOutputFile( filePath );
             //録音の準備をする

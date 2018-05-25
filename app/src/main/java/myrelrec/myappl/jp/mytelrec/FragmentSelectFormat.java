@@ -23,23 +23,24 @@ import java.util.ArrayList;
 
 public class FragmentSelectFormat extends Fragment {
 
-    public enum FormatList { // 初めて使ってみた・・・
-        WAV( "WAV" ),
-        MP3( "MP3" ),
-        MP4( "MP4" );
-
-        private final String type;
-        private final String DEFAULT_TYPE = "WAV";
-
-        /*private*/ FormatList( String wav ) {
-            this.type = wav;
-            Log.d( "test enum", "arg = "+wav );
-        }
-
-        public String getValue() {
-            return this.type;
-        }
-    }
+// 外に出す
+//    public enum EnumFormatList { // 初めて使ってみた・・・
+//        WAV( "WAV" ),
+//        MP3( "MP3" ),
+//        MP4( "MP4" );
+//
+//        private final String type;
+//        private final String DEFAULT_TYPE = "WAV";
+//
+//        /*private*/ EnumFormatList( String wav ) {
+//            this.type = wav;
+//            Log.d( "test enum", "arg = "+wav );
+//        }
+//
+//        public String getValue() {
+//            return this.type;
+//        }
+//    }
 
     private final String LOG_TAG = getClass().getSimpleName();
     private String mSpecifiedType;
@@ -114,8 +115,8 @@ public class FragmentSelectFormat extends Fragment {
 
         ArrayList<String> arrayList = new ArrayList<>();
 
-        FormatList[] lists = FormatList.values();
-        for ( FormatList list : lists ) {
+        EnumFormatList[] lists = EnumFormatList.values();
+        for ( EnumFormatList list : lists ) {
             arrayList.add( list.getValue() );
         }
 

@@ -4,6 +4,7 @@ import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -105,6 +106,21 @@ public class FragmentMain extends Fragment {
         if ( isRecordServiceAlive() ) { //通話録音サービスが起動中なら
             mSettingData.setAutoStart( true ); //通話と同時に録音を開始に設定
         }
+
+//通話音量が最大になってるので受話の音量が小さいのは別な原因？？
+//再生時の音量調整になるのか？（で、とりあえずコメント）
+//
+//        //
+//        //AudioManagerで録音Volumeを調整する。
+//        //
+//        AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
+//        int maxVolume = audioManager.getStreamMaxVolume( AudioManager.STREAM_VOICE_CALL );
+//// Android P から        int minVolume = audioManager.getStreamMinVolume( AudioManager.STREAM_VOICE_CALL );
+//        int currentVolume = audioManager.getStreamVolume( AudioManager.STREAM_VOICE_CALL );
+//        Log.d( LOG_TAG, "volume Max / Current->" + maxVolume + " / " + currentVolume );
+//
+////通話音量設定：audioManager.setStreamVolume( AudioManager.STREAM_VOICE_CALL/*通話*/, maxVolume/*最大値*/, AudioManager.FLAG_SHOW_UI/*バーを表示する(Show a toast containing the current volume.)*/ );
+//
     }
 
     @Override
@@ -367,7 +383,7 @@ public class FragmentMain extends Fragment {
 
         File f = new File( mContext.getFilesDir()+"/"+fileName );
         if ( ! f.exists() ) { //無ければデフォルト値を設定して終了。
-            setting.setFormat( FragmentSelectFormat.FormatList.WAV.getValue() ); // 遠い・・・、enum 、外に出した方がいい・・・
+            setting.setFormat( EnumFormatList.WAV.getValue() ); // 遠い・・・、enum 、外に出した方がいい・・・
             setting.setAutoStart( false );
             setting.setBluetooth( false );
             return setting;
@@ -378,7 +394,7 @@ public class FragmentMain extends Fragment {
             bufferedReader = new BufferedReader( new InputStreamReader( inputStream ) );
             String readData = bufferedReader.readLine();
             if ( readData == null ) { // ファイルが壊れてる？？：デフォルト値を設定
-                setting.setFormat( FragmentSelectFormat.FormatList.WAV.getValue() ); // 遠い・・・、enum 、外に出した方がいい・・・
+                setting.setFormat( EnumFormatList.WAV.getValue() ); // 遠い・・・、enum 、外に出した方がいい・・・
                 setting.setAutoStart( false );
                 setting.setBluetooth( false );
                 return setting;
@@ -386,7 +402,7 @@ public class FragmentMain extends Fragment {
 
             String[] item = readData.split( "," );
             if ( item.length <= 0 ) { // ファイルが壊れてる？？：デフォルト値を設定
-                setting.setFormat( FragmentSelectFormat.FormatList.WAV.getValue() ); // 遠い・・・、enum 、外に出した方がいい・・・
+                setting.setFormat( EnumFormatList.WAV.getValue() ); // 遠い・・・、enum 、外に出した方がいい・・・
                 setting.setAutoStart( false );
                 setting.setBluetooth( false );
             } else {
