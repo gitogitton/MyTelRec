@@ -1,6 +1,7 @@
 package myrelrec.myappl.jp.mytelrec;
 
 import android.app.ActivityManager;
+import android.app.DialogFragment;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -309,23 +310,29 @@ public class FragmentMain extends Fragment {
                 ItemData item = (ItemData) parent.getItemAtPosition( position );
                 Log.d( LOG_TAG, "item->"+item.getDate()+" / "+item.getPhoneNumber() );
 
-                //
-                //再生処理を書こう！！！
-                //
-                //
-                // ↓　とりあえずの処理なのであとでちゃんと作れ！！
-                if ( mMediaPlayer != null && mMediaPlayer.isPlaying() ) {
-                    Log.d( LOG_TAG, "mediaPlayter stop." );
-                    mMediaPlayer.pause();
-                    mMediaPlayer.stop();
-                    mMediaPlayer.reset();
-                } else {
-                    Log.d( LOG_TAG, "mediaPlayter start." );
-                    mMediaPlayer = MediaPlayer.create( mContext, Uri.parse( "/storage/sdcard0/telrec/"+item.getPhoneNumber() ) );
-                    mMediaPlayer.setVolume( (float) 1.0, (float)1.0 ); // 0.0 - 1.0
-                    mMediaPlayer.setLooping( false );
-                    mMediaPlayer.start();
-                }
+                DialogPlayVoice dialogPlayVoice = new DialogPlayVoice();  // --> new よりも newInstance() の方がいい？ 自作SFTPアプリではそうしてるんだけど・・。やり方が安定しないなぁ。まぁ、ケースバイケースで拡張性の要不要を熟慮すればいいんだけど・・・。
+                Bundle args = new Bundle();
+                args.putString( "target_file", item.getPhoneNumber() );
+                dialogPlayVoice.setArguments( args );
+                dialogPlayVoice.show( getFragmentManager(), "PlayVoice" );
+
+//                //
+//                //再生処理を書こう！！！
+//                //
+//                //
+//                // ↓　とりあえずの処理なのであとでちゃんと作れ！！
+//                if ( mMediaPlayer != null && mMediaPlayer.isPlaying() ) {
+//                    Log.d( LOG_TAG, "mediaPlayter stop." );
+//                    mMediaPlayer.pause();
+//                    mMediaPlayer.stop();
+//                    mMediaPlayer.reset();
+//                } else {
+//                    Log.d( LOG_TAG, "mediaPlayter start." );
+//                    mMediaPlayer = MediaPlayer.create( mContext, Uri.parse( "/storage/sdcard0/telrec/"+item.getPhoneNumber() ) );
+//                    mMediaPlayer.setVolume( (float) 1.0, (float)1.0 ); // 0.0 - 1.0
+//                    mMediaPlayer.setLooping( false );
+//                    mMediaPlayer.start();
+//                }
             }
         });
     }

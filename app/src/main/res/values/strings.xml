@@ -15,6 +15,10 @@
     <string name="auto_start_explain">アプリ起動で録音を有効にする場合ＯＮ</string>
     <string name="bluetooth_explain">Bluetoothを使用する場合ＯＮ</string>
 
+    <!--音声再生ダイアログ-->
+    <string name="seekbar_volume">ボリューム</string>
+    <string name="seekbar_position">進行状況</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="menu_end_without_save">保存せずに戻る</string>
