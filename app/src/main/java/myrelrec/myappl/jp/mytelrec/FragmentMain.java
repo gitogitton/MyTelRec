@@ -55,6 +55,7 @@ public class FragmentMain extends Fragment {
     private View mView;
     private SettingData mSettingData = new SettingData();
     private String mIntentFileType;
+    private boolean mRecActive = false;
 
 //とりあえずコメント
 //    private MyBroadcastReceiver mMyReceiver = new MyBroadcastReceiver();
@@ -79,6 +80,7 @@ public class FragmentMain extends Fragment {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        Log.d( LOG_TAG, "onCreate() start." );
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             mParam1 = getArguments().getString(ARG_PARAM1);
@@ -90,6 +92,7 @@ public class FragmentMain extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        Log.d( LOG_TAG, "onCreateView() start." );
         // Inflate the layout for this fragment
         mView = inflater.inflate(R.layout.fragment_main, container, false);
 
@@ -101,10 +104,15 @@ public class FragmentMain extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        Log.d( LOG_TAG, "onViewCreated() start." );
         showRecordingFileList();
         restoreSettingData();
         if ( isRecordServiceAlive() ) { //通話録音サービスが起動中なら
-            mSettingData.setAutoStart( true ); //通話と同時に録音を開始に設定
+            mRecActive = true;
+        }
+        if ( mSettingData.isAutoStart() ) { // autoStart が設定されているときはアプリ起動とともに録音モードに入る。
+            startTelRecService();
+            mRecActive = true;
         }
 
 //通話音量が最大になってるので受話の音量が小さいのは別な原因？？
@@ -177,8 +185,7 @@ public class FragmentMain extends Fragment {
 
         MenuItem item = menu.findItem( R.id.menu_activate );
         SwitchCompat switchCompat = (SwitchCompat) item.getActionView();
-        boolean isAutoStart = mSettingData.isAutoStart();
-        switchCompat.setChecked( isAutoStart );
+        switchCompat.setChecked( mRecActive );
         switchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -190,10 +197,6 @@ public class FragmentMain extends Fragment {
                 }
             }
         });
-
-        if ( isAutoStart ) { // autoStart が設定されているときはアプリ起動とともに録音モードに入る。
-            startTelRecService();
-        }
     }
 
     @Override
