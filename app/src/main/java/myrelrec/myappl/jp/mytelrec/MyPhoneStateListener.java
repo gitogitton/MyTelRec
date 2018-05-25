@@ -37,7 +37,7 @@ public class MyPhoneStateListener extends PhoneStateListener {
 
             case TelephonyManager.CALL_STATE_IDLE: //待ち受け（終了時）
                 Toast.makeText( mContext, "待ち受け", Toast.LENGTH_LONG ).show();
-                Log.d( LOG_TAG, "待ち受け ( mRecNow->"+mRecNow+" )" );
+//                Log.d( LOG_TAG, "待ち受け ( mRecNow->"+mRecNow+" )" );
                 if ( mRecNow) {
                     mMediaRecorder.stop();
                     mMediaRecorder.reset();   //オブジェクトのリセット
@@ -48,15 +48,14 @@ public class MyPhoneStateListener extends PhoneStateListener {
                 break;
 
             case TelephonyManager.CALL_STATE_RINGING: //着信
-                Toast.makeText( mContext, "着信："+callNumber, Toast.LENGTH_LONG ).show();
-                Toast.makeText( mContext, "着信："+callNumber, Toast.LENGTH_LONG ).show();
-                Log.d( LOG_TAG, "着信："+callNumber );
+//                Toast.makeText( mContext, "着信："+callNumber, Toast.LENGTH_LONG ).show();
+//                Log.d( LOG_TAG, "着信："+callNumber );
                 mRecNow = false; //着信があるという事は通話中ではないと断定してしまう。キャッチホンとかあるのかな・・・。留守電モードとか・・・。
                 break;
 
             case TelephonyManager.CALL_STATE_OFFHOOK: //通話
-                Toast.makeText( mContext, "受話／発信", Toast.LENGTH_LONG ).show();
-                Log.d( LOG_TAG, "受話／発信 ( mRecNow->"+mRecNow+" )" );
+//                Toast.makeText( mContext, "受話／発信", Toast.LENGTH_LONG ).show();
+//                Log.d( LOG_TAG, "受話／発信 ( mRecNow->"+mRecNow+" )" );
 
                 //
                 //録音
