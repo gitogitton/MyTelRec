@@ -186,6 +186,16 @@ public class FragmentMain extends Fragment {
 
         MenuItem item = menu.findItem( R.id.menu_activate );
         SwitchCompat switchCompat = (SwitchCompat) item.getActionView();
+
+        // switchCompat で android:padding～ 属性を指定しても効かない。下記方法で効いた。
+        final int paddingRightOffset = 100;  //switch の右にオフセット
+        switchCompat.setPadding( switchCompat.getPaddingStart(), switchCompat.getPaddingTop(),
+                switchCompat.getPaddingRight() + paddingRightOffset, switchCompat.getPaddingBottom() );
+        switchCompat.setText( "録音モード" );
+        switchCompat.setTextOff( "Off" );
+        switchCompat.setTextOn( "On" );
+        switchCompat.setShowText( true ); // <--- これがないと setTextOn(), setTextOff() が効かない・・・。
+
         switchCompat.setChecked( mRecActive );
         switchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
