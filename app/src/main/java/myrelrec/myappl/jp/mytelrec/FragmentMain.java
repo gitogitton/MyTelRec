@@ -1,12 +1,9 @@
 package myrelrec.myappl.jp.mytelrec;
 
 import android.app.ActivityManager;
-import android.app.DialogFragment;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -64,8 +61,6 @@ public class FragmentMain extends Fragment {
     private MyPhoneStateListener mMyListener = null;
     private TelephonyManager mTelephonyManager = null;
 
-    private MediaPlayer mMediaPlayer = null;
-
     public FragmentMain() {
         // Required empty public constructor
     }
@@ -87,7 +82,6 @@ public class FragmentMain extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-        mMediaPlayer = new MediaPlayer();
     }
 
     @Override
@@ -115,21 +109,6 @@ public class FragmentMain extends Fragment {
             startTelRecService();
             mRecActive = true;
         }
-
-//通話音量が最大になってるので受話の音量が小さいのは別な原因？？
-//再生時の音量調整になるのか？（で、とりあえずコメント）
-//
-//        //
-//        //AudioManagerで録音Volumeを調整する。
-//        //
-//        AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
-//        int maxVolume = audioManager.getStreamMaxVolume( AudioManager.STREAM_VOICE_CALL );
-//// Android P から        int minVolume = audioManager.getStreamMinVolume( AudioManager.STREAM_VOICE_CALL );
-//        int currentVolume = audioManager.getStreamVolume( AudioManager.STREAM_VOICE_CALL );
-//        Log.d( LOG_TAG, "volume Max / Current->" + maxVolume + " / " + currentVolume );
-//
-////通話音量設定：audioManager.setStreamVolume( AudioManager.STREAM_VOICE_CALL/*通話*/, maxVolume/*最大値*/, AudioManager.FLAG_SHOW_UI/*バーを表示する(Show a toast containing the current volume.)*/ );
-//
     }
 
     @Override
@@ -325,24 +304,6 @@ public class FragmentMain extends Fragment {
                 args.putString( "target_file", item.getPhoneNumber() );
                 dialogPlayVoice.setArguments( args );
                 dialogPlayVoice.show( getFragmentManager(), "PlayVoice" );
-
-//                //
-//                //再生処理を書こう！！！
-//                //
-//                //
-//                // ↓　とりあえずの処理なのであとでちゃんと作れ！！
-//                if ( mMediaPlayer != null && mMediaPlayer.isPlaying() ) {
-//                    Log.d( LOG_TAG, "mediaPlayter stop." );
-//                    mMediaPlayer.pause();
-//                    mMediaPlayer.stop();
-//                    mMediaPlayer.reset();
-//                } else {
-//                    Log.d( LOG_TAG, "mediaPlayter start." );
-//                    mMediaPlayer = MediaPlayer.create( mContext, Uri.parse( "/storage/sdcard0/telrec/"+item.getPhoneNumber() ) );
-//                    mMediaPlayer.setVolume( (float) 1.0, (float)1.0 ); // 0.0 - 1.0
-//                    mMediaPlayer.setLooping( false );
-//                    mMediaPlayer.start();
-//                }
             }
         });
     }
