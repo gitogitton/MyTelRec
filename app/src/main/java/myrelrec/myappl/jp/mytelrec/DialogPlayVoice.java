@@ -170,7 +170,7 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
                     int pos = (int)( (float)duration * ( (float) progress / (float)100 ) );
 //                    Log.d( LOG_TAG, "seekTo pos(duration)->"+pos+"("+duration+")" );
                     mMediaPlayer.seekTo( pos ); //いきなり飛ばしていいのだろうか？？-->警告、エラー等がないのでOKと思う。
-
+                    mMediaPlayer.start();
                 } else { // 定周期な更新
 
                 }
@@ -178,19 +178,6 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
                 //残り再生時間を描画
                 indicateRemainPlayTime();
 
-                int diff = mMediaPlayer.getDuration() - mMediaPlayer.getCurrentPosition();
-                Log.d( LOG_TAG, "diff->" + diff );
-                if ( diff <= 0 ) { //再生終了している場合
-                    Log.d( LOG_TAG, "handler remove" );
-//                    mHandler.removeCallbacks( mRunnable );  //--->>>あれあれ？ 通ってるのにタイマー起動が止まらない。
-//                                                            //ダイアログは閉じない、そして、再生位置を戻したらそのまま再生したいから止まらないほうがいいのか。
-//                                                            //でもなぜここで止まらないのだろう？止まりそうな気がしていたが。
-                } else { //再生h中
-                    Log.d( LOG_TAG, "playing" );
-                    if ( ! mMediaPlayer.isPlaying() ) { //止まっている場合は再スタート
-                        mMediaPlayer.start();
-                    }
-                }
             }
 
             @Override
