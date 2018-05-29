@@ -15,7 +15,8 @@ public class MyPhoneStateListener extends PhoneStateListener {
 
     private final String LOG_TAG = getClass().getSimpleName();
     private final String recFilePath = "/storage/sdcard0/telrec";      //録音ファイルの保存先
-    private boolean mRecNow = false;
+    private boolean mRecNow = false; //録音中はtrue
+    private boolean mReceive = false; //着信の場合にtrue
     private MediaRecorder mMediaRecorder = new MediaRecorder();
     private Context mContext;
     private String mFileType;
@@ -44,6 +45,7 @@ public class MyPhoneStateListener extends PhoneStateListener {
                     //release()前であればsetAudioSourceメソッドを呼び出すことで再利用可能
                     mMediaRecorder.release(); //
                     mRecNow = false;
+                    mReceive = false;
                 }
                 break;
 
@@ -51,6 +53,7 @@ public class MyPhoneStateListener extends PhoneStateListener {
 //                Toast.makeText( mContext, "着信："+callNumber, Toast.LENGTH_LONG ).show();
 //                Log.d( LOG_TAG, "着信："+callNumber );
                 mRecNow = false; //着信があるという事は通話中ではないと断定してしまう。キャッチホンとかあるのかな・・・。留守電モードとか・・・。
+                mReceive = true;
                 break;
 
             case TelephonyManager.CALL_STATE_OFFHOOK: //通話
@@ -91,7 +94,8 @@ public class MyPhoneStateListener extends PhoneStateListener {
         String extString = f.getValue();
 
         // YYYYMMDDhhmmss_tel.mp4 (locationが関係してくるなんて・・・)
-        fileName = String.format( Locale.US, "%04d%02d%02d_%02d%02d%02d_tel.%s", year, month, dayOfMonth, hourOfDay, minute, second, extString );
+        fileName = String.format( Locale.US, "%04d%02d%02d_%02d%02d%02d_%s.%s",
+                year, month, dayOfMonth, hourOfDay, minute, second, mReceive?"r":"s", extString );
         Log.d( LOG_TAG, "file name->"+fileName );
 
         return fileName;

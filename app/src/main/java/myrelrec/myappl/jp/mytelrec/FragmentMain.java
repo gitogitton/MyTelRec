@@ -321,9 +321,8 @@ public class FragmentMain extends Fragment {
             return arrayList;
         }
 
-//        Collections.sort( arrayList, new FileNameComparator() ); //直近から古いものへとソート
 //        Collections.sort( Arrays.asList( dirList ) );  //降順ソート
-        Collections.reverse( Arrays.asList( dirList ) ); //昇順ソート
+//        Collections.reverse( Arrays.asList( dirList ) ); //昇順ソート
 
         String prevDate = "";
         for ( String item : dirList ) {
@@ -346,6 +345,8 @@ public class FragmentMain extends Fragment {
             arrayList.add( itemData );
             prevDate = date;
         }
+
+        Collections.sort( arrayList, new FileNameComparator() ); //直近から古いものへとソート
 
         return arrayList;
     }
