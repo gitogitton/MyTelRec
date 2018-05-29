@@ -34,6 +34,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 
 public class FragmentMain extends Fragment {
 
@@ -318,12 +321,30 @@ public class FragmentMain extends Fragment {
             return arrayList;
         }
 
+//        Collections.sort( arrayList, new FileNameComparator() ); //直近から古いものへとソート
+//        Collections.sort( Arrays.asList( dirList ) );  //降順ソート
+        Collections.reverse( Arrays.asList( dirList ) ); //昇順ソート
+
+        String prevDate = "";
         for ( String item : dirList ) {
             Log.d( LOG_TAG, "file->" + item );
             ItemData itemData = new ItemData();
-            itemData.setDate( "2018/5/15" );
+            String date = item.toString().substring( 0, 8 ); // ファイル名からyyyymmdd を取得
+            if ( prevDate.equals( date ) ) {
+                itemData.setDate( "" );
+            } else {
+                StringBuilder stringBuilder = new StringBuilder(); //いつもStringBufferとStringBuilderで迷う。。。マルチスレッドではないからね。
+                stringBuilder.append( date.substring( 0, 4 ) );
+                stringBuilder.append( "/" );
+                stringBuilder.append( date.substring( 4, 6 ) );
+                stringBuilder.append( "/" );
+                stringBuilder.append( date.substring( 6, 8 ) );
+
+                itemData.setDate( stringBuilder.toString() );
+            }
             itemData.setPhoneNumber( item );
             arrayList.add( itemData );
+            prevDate = date;
         }
 
         return arrayList;
