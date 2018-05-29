@@ -14,6 +14,7 @@ import android.support.v4.app.DialogFragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -46,10 +47,12 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
 
         AlertDialog.Builder builder = new AlertDialog.Builder( getActivity() );
 
-        LayoutInflater inflater = Objects.requireNonNull(getActivity()).getLayoutInflater();
-        mView = inflater.inflate( R.layout.dialog_play_voice, null );
-        builder.setView( mView );
+//        LayoutInflater inflater = Objects.requireNonNull(getActivity()).getLayoutInflater();
+//        LayoutInflater inflater = (LayoutInflater) mContext.getSystemService( Context.LAYOUT_INFLATER_SERVICE );
+        LayoutInflater inflater = LayoutInflater.from( mContext );
+        mView = inflater.inflate( R.layout.dialog_play_voice, (ViewGroup) null );
 
+        builder.setView( mView );
         builder.setTitle( mDialogTitle );
         builder.setMessage( mMessage );
 
@@ -116,8 +119,14 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
         //ボリュームのseekBarを現在の値に合わせる。
         SeekBar seekBarVolume = mView.findViewById( R.id.seekBar_volume );
         AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
-        int volume = audioManager.getStreamVolume( AudioManager.STREAM_MUSIC );
-        int volumeMax = audioManager.getStreamMaxVolume( AudioManager.STREAM_MUSIC );
+        int volume = 0;
+        if (audioManager != null) {
+            volume = audioManager.getStreamVolume( AudioManager.STREAM_MUSIC );
+        }
+        int volumeMax = 0;
+        if (audioManager != null) {
+            volumeMax = audioManager.getStreamMaxVolume( AudioManager.STREAM_MUSIC );
+        }
         int progressValue = (int)( ( (float)volume/(float)volumeMax) * (float)100.0 );
         seekBarVolume.setProgress( progressValue );
         //Log.d( LOG_TAG, "initSeekBar() currentVol/maxVol/progressVal->" + volume + " / " + volumeMax + " / " + progressValue );
@@ -136,19 +145,29 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
 //                Log.d( LOG_TAG, "seekBarVolume.onStartTrackingTouch()" );
-                // for debug
-                AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
-                int volume = audioManager.getStreamVolume( AudioManager.STREAM_MUSIC );
+//                // for debug
+//                AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
+//                if (audioManager != null) {
+//                    int volume = audioManager.getStreamVolume( AudioManager.STREAM_MUSIC );
+//                }
 //                Log.d( LOG_TAG, "seekBarVolume.onStartTrackingTouch() Volume : current->" + volume );
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
-                int volume = audioManager.getStreamVolume( AudioManager.STREAM_MUSIC );
-                int volumeMax = audioManager.getStreamMaxVolume( AudioManager.STREAM_MUSIC );
+                if (audioManager != null) {
+                    int volume = audioManager.getStreamVolume( AudioManager.STREAM_MUSIC );
+                }
+                int volumeMax = 0;
+                if (audioManager != null) {
+                    volumeMax = audioManager.getStreamMaxVolume( AudioManager.STREAM_MUSIC );
+                }
                 int setVolumeValue = (int)( (float)volumeMax * (float)mLastProgress/(float)seekBarVolume.getMax() );
-                audioManager.setStreamVolume( AudioManager.STREAM_MUSIC, setVolumeValue, AudioManager.FLAG_SHOW_UI ); // デバッグ終わると変更 : third argument -> AudioManager.FLAG_VIBRATE
+                if (audioManager != null) {
+//                    audioManager.setStreamVolume( AudioManager.STREAM_MUSIC, setVolumeValue, AudioManager.FLAG_SHOW_UI ); // デバッグ終わると変更 : third argument -> AudioManager.FLAG_VIBRATE
+                    audioManager.setStreamVolume( AudioManager.STREAM_MUSIC, setVolumeValue, AudioManager.FLAG_VIBRATE );
+                }
 
 //                Log.d( LOG_TAG, "seekBarVolume.onStopTrackingTouch() Volume : getMax() / lastProgress->" + seekBarVolume.getMax() + " / " + mLastProgress );
 //                Log.d( LOG_TAG, "seekBarVolume.onStopTrackingTouch() Volume : current/max->" + volume + " / " + volumeMax );
@@ -171,8 +190,6 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
 //                    Log.d( LOG_TAG, "seekTo pos(duration)->"+pos+"("+duration+")" );
                     mMediaPlayer.seekTo( pos ); //いきなり飛ばしていいのだろうか？？-->警告、エラー等がないのでOKと思う。
                     mMediaPlayer.start();
-                } else { // 定周期な更新
-
                 }
 
                 //残り再生時間を描画
