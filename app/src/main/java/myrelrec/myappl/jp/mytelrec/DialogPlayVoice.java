@@ -53,19 +53,19 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
         builder.setTitle( mDialogTitle );
         builder.setMessage( mMessage );
 
-        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+        builder.setPositiveButton("終了", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                Log.d( LOG_TAG, "click positive button" );
+//                Log.d( LOG_TAG, "click positive button" );
             }
         });
 
-        builder.setNegativeButton("NG", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                Log.d( LOG_TAG, "click negative button" );
-            }
-        });
+//        builder.setNegativeButton("NG", new DialogInterface.OnClickListener() {
+//            @Override
+//            public void onClick(DialogInterface dialog, int which) {
+//                Log.d( LOG_TAG, "click negative button" );
+//            }
+//        });
 
         initSeekBar();
 
@@ -227,7 +227,7 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
                 SeekBar seekBar = mView.findViewById( R.id.seekBar_play_position );
                 seekBar.setProgress( (int)( progressPos * (float)100 ) ); // --> onProgressChanged() with fromUser=false.
 
-                mHandler.postDelayed( this, 2000 /*millisecond*/  ); // millisec 周期でスレッドにPOSTする
+                mHandler.postDelayed( this, 1000 /*millisecond*/  ); // millisec 周期でスレッドにPOSTする
             }
         };
         mHandler.post( mRunnable );
