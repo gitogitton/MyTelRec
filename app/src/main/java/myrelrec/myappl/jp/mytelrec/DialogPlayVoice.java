@@ -8,12 +8,14 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.SeekBar;
+import android.widget.TextView;
 
 import java.util.Objects;
 
@@ -28,6 +30,8 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
     private int mLastProgress = -1; //SeekBarの位置。volume値とは違う。バー割合（みたい感じ）です！！勘違いするなよぉ～。もうしたけど・・・
     private int mLastPos = -1;
     private MediaPlayer mMediaPlayer = null;
+    private Handler mHandler;
+    private Runnable mRunnable;
 
     @NonNull
     @Override
@@ -80,11 +84,22 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
     }
 
     @Override
+    public void onPause() {
+        Log.d( LOG_TAG, "onPause()" );
+        super.onPause();
+    }
+
+    @Override
     public void onDetach() {
         Log.d( LOG_TAG, "onDetach()" );
-        super.onDetach();
-        mMediaPlayer.stop();
+
+        mHandler.removeCallbacks( mRunnable );
+
+        if ( mMediaPlayer.isPlaying() ) { mMediaPlayer.stop(); } //いらない？
+        mMediaPlayer.reset(); // mediaPlayer become idle.
         mMediaPlayer.release();
+
+        super.onDetach();
     }
 
     //
@@ -110,9 +125,7 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
 
     private void setListeners() {
 
-        SeekBar seekBarPlayPos = mView.findViewById( R.id.seekBar_play_position );
         final SeekBar seekBarVolume = mView.findViewById( R.id.seekBar_volume );
-
         seekBarVolume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -143,10 +156,41 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
             }
         });
 
+        SeekBar seekBarPlayPos = mView.findViewById( R.id.seekBar_play_position );
         seekBarPlayPos.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 Log.d( LOG_TAG, "seekBarPlayPos.onProgressChanged() progress/fromUser ->" + progress + " / " + fromUser );
+                if ( fromUser ) {
+
+                    //再生位置を変更されたらスレッドを止めて、再度起動しないといけないかな？？？
+                    // --> 止めなくても大丈夫みたい。警告もエラーもなく動作してくれた。
+
+                    int duration = mMediaPlayer.getDuration();
+                    int pos = (int)( (float)duration * ( (float) progress / (float)100 ) );
+//                    Log.d( LOG_TAG, "seekTo pos(duration)->"+pos+"("+duration+")" );
+                    mMediaPlayer.seekTo( pos ); //いきなり飛ばしていいのだろうか？？-->警告、エラー等がないのでOKと思う。
+
+                } else { // 定周期な更新
+
+                }
+
+                //残り再生時間を描画
+                indicateRemainPlayTime();
+
+                int diff = mMediaPlayer.getDuration() - mMediaPlayer.getCurrentPosition();
+                Log.d( LOG_TAG, "diff->" + diff );
+                if ( diff <= 0 ) { //再生終了している場合
+                    Log.d( LOG_TAG, "handler remove" );
+//                    mHandler.removeCallbacks( mRunnable );  //--->>>あれあれ？ 通ってるのにタイマー起動が止まらない。
+//                                                            //ダイアログは閉じない、そして、再生位置を戻したらそのまま再生したいから止まらないほうがいいのか。
+//                                                            //でもなぜここで止まらないのだろう？止まりそうな気がしていたが。
+                } else { //再生h中
+                    Log.d( LOG_TAG, "playing" );
+                    if ( ! mMediaPlayer.isPlaying() ) { //止まっている場合は再スタート
+                        mMediaPlayer.start();
+                    }
+                }
             }
 
             @Override
@@ -179,8 +223,56 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
         mMediaPlayer.setOnErrorListener( this );
         mMediaPlayer .setVolume( (float) 1.0, (float)1.0 ); // 0.0 - 1.0
         mMediaPlayer .setLooping( false );
+
+        indicateRemainPlayTime();
+
+// position seekBar 描画のためのハンドラー（ここから）：TimerTask／Timerクラスを使う事も可能なようだが今回はスレッドはこれだけなのでHandlerで実装。複数スレッドが発生する場合はTimerTask/Timerを使うほうがいいのかな？スレッドセーフ？
+        mHandler = new Handler();
+        mRunnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.d( LOG_TAG, "runnable" );
+
+                int currentPos = mMediaPlayer.getCurrentPosition();
+                int duration = mMediaPlayer.getDuration();
+                float progressPos = (float)currentPos / (float)duration;
+
+                SeekBar seekBar = mView.findViewById( R.id.seekBar_play_position );
+                seekBar.setProgress( (int)( progressPos * (float)100 ) ); // --> onProgressChanged() with fromUser=false.
+
+                mHandler.postDelayed( this, 2000 /*millisecond*/  ); // millisec 周期でスレッドにPOSTする
+            }
+        };
+        mHandler.post( mRunnable );
+// position seekBar 描画のためのハンドラー（ここまで）
+
 //  MediaPlayerクラスでnewした場合にCallする。Instanceを取得（create）する場合はいらない。          mMediaPlayer.prepare();
+
         mMediaPlayer .start();
+    }
+
+    private void indicateRemainPlayTime() {
+
+        int duration = mMediaPlayer.getDuration(); //the duration in milliseconds, if no duration is available (for example, if streaming live content), -1 is returned.
+        int current = mMediaPlayer.getCurrentPosition();
+        int diff = duration - current;
+
+        float s = (float)diff / (float)1000.0;
+        int hour = (int)( s / (float)3600 ); //60 * 60
+        int minute = (int)( s / (float)60 );
+        int second = (int)( s % (float)60 );
+
+        String strTime;
+        if ( hour > 0 ) {
+            strTime = "残り再生時間："+hour+"時間"+minute+"分"+second+"秒";
+        } else {
+            strTime = "残り再生時間："+minute+"分"+second+"秒";
+        }
+        Log.d( LOG_TAG, strTime );
+
+        TextView progressTime = mView.findViewById( R.id.text_progress_time );
+        progressTime.setText( strTime );
+
     }
 
     @Override

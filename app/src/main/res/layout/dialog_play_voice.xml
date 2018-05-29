@@ -41,5 +41,12 @@
         android:progress="25"
         android:max="100"
         app:layout_constraintTop_toBottomOf="@id/text_play_position" />
+    <TextView
+        android:id="@+id/text_progress_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/textSize_small"
+        android:text="@string/seekbar_remainTime"
+        app:layout_constraintTop_toBottomOf="@id/seekBar_play_position"/>
 
 </android.support.constraint.ConstraintLayout>

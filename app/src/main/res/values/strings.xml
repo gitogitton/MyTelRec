@@ -18,8 +18,8 @@
     <!--音声再生ダイアログ-->
     <string name="seekbar_volume">ボリューム</string>
     <string name="seekbar_position">進行状況</string>
+    <string name="seekbar_remainTime">残り再生時間</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="menu_end_without_save">保存せずに戻る</string>
 </resources>
