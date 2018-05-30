@@ -22,4 +22,6 @@
 
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="menu_end_without_save">保存せずに戻る</string>
+    <string name="menu_file_del">ファイル削除</string>
+    <string name="menu_cancel_fileDel">中止</string>
 </resources>

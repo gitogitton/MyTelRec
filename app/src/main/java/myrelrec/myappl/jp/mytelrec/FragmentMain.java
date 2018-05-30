@@ -27,6 +27,7 @@ import android.widget.AdapterView;
 import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,16 +35,16 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 
 public class FragmentMain extends Fragment {
 
     private final String LOG_TAG = getClass().getSimpleName();
     private final String SETTING_FILE_NAME = "setting.csv"; //format : [file format],[auto start],[use bluetooth]
     private final String KEY_FILE_TYPE = "key_fileType";
-    private final String recFilePath = "/storage/sdcard0/telrec";      //録音ファイルの保存先
+    private final String REC_FILE_PATH = "/storage/sdcard0/telrec";      //録音ファイルの保存先
+    private final int   MENU_TYPE_MAIN = 1;
+    private final int   MENU_TYPE_FILE_DEL = 2;
 
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -57,6 +58,8 @@ public class FragmentMain extends Fragment {
     private SettingData mSettingData = new SettingData();
     private String mIntentFileType;
     private boolean mRecActive = false;
+    private View mSelectedView = null; //選択中（バックグランド色）を解除するため選択行のViewを保存
+    private int mMenuType = MENU_TYPE_MAIN;
 
 //とりあえずコメント
 //    private MyBroadcastReceiver mMyReceiver = new MyBroadcastReceiver();
@@ -163,6 +166,7 @@ public class FragmentMain extends Fragment {
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        Log.d( LOG_TAG, "onCreateOptionsMenu() start." );
 
         inflater.inflate( R.menu.menu_main, menu );
 
@@ -193,11 +197,56 @@ public class FragmentMain extends Fragment {
     }
 
     @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        Log.d( LOG_TAG, "onPrepareOptionsMenu() start." + mMenuType );
+
+        super.onPrepareOptionsMenu(menu);
+
+        switch ( mMenuType ) {
+            case MENU_TYPE_MAIN :
+                menu.findItem( R.id.menu_activate ).setVisible( true );
+                menu.findItem( R.id.menu_setting ).setVisible( true );
+                menu.findItem( R.id.menu_file_delete ).setVisible( false );
+                menu.findItem( R.id.menu_cancel ).setVisible( false );
+                break;
+            case MENU_TYPE_FILE_DEL : //ListViewでファイルを選択中
+                menu.findItem( R.id.menu_activate ).setVisible( false );
+                menu.findItem( R.id.menu_setting ).setVisible( false );
+                menu.findItem( R.id.menu_file_delete ).setVisible( true );
+                menu.findItem( R.id.menu_cancel ).setVisible( true );
+                break;
+            default :
+                menu.findItem( R.id.menu_activate ).setVisible( true );
+                menu.findItem( R.id.menu_setting ).setVisible( true );
+                menu.findItem( R.id.menu_file_delete ).setVisible( false );
+                menu.findItem( R.id.menu_cancel ).setVisible( false );
+                break;
+        }
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch ( item.getItemId() ) {
             case R.id.menu_setting :
                 Log.d( LOG_TAG, "select menu_setting." );
                 showSettingForm();
+                break;
+            case R.id.menu_file_delete : // ファイル削除
+                if ( mSelectedView != null ) {
+                    deleteSpecifiedFile();
+                    refreshList();
+                    mSelectedView = null;
+                }
+                mMenuType = MENU_TYPE_MAIN;
+                ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
+//                getActivity().invalidateOptionsMenu();
+                break;
+            case R.id.menu_cancel : //ファイル削除 中止
+                mMenuType = MENU_TYPE_MAIN;
+                mSelectedView.setSelected( false );
+                ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
+//                getActivity().invalidateOptionsMenu();
+                mSelectedView = null;
                 break;
             default:
                 break;
@@ -212,9 +261,48 @@ public class FragmentMain extends Fragment {
     //
     //private methods
     //
+    private void refreshList() {
+        TextView textView = mSelectedView.findViewById( R.id.text_phoneNumber );
+        String fileName = textView.getText().toString();
+
+        ListView listView = mView.findViewById( R.id.list_recordFileList );
+        RecordingFileListAdapter adapter = (RecordingFileListAdapter) listView.getAdapter();
+        for ( int i=0; i<adapter.getCount(); i++ ) {
+            ItemData itemData = adapter.getItem( i );
+            if ( itemData != null && fileName.equals( itemData.getPhoneNumber() ) ) {
+                adapter.remove( itemData );
+                break;
+            }
+        }
+        adapter.notifyDataSetChanged();
+    }
+
+    private void deleteSpecifiedFile() {
+        Log.d( LOG_TAG, "deleteSpecifiedFile() Go !!" );
+
+        TextView textFileName = mSelectedView.findViewById( R.id.text_phoneNumber );
+        String fileName = REC_FILE_PATH + "/" + textFileName.getText().toString();
+        Log.d( LOG_TAG, "deleted file -> " + fileName );
+
+        File file = new File( fileName );
+        if ( file.exists() ) {
+            boolean result = file.delete();
+            if ( !result ) {
+                Toast.makeText( mContext, "Delete File Error !! [" + fileName + "]", Toast.LENGTH_LONG ).show();
+            }
+        } else {
+            Toast.makeText( mContext, "File doesn't exist. [" + fileName + "]", Toast.LENGTH_LONG ).show();
+        }
+
+        mSelectedView.setSelected( false );
+    }
+
     private boolean isRecordServiceAlive() {
         //（確か）API 26から廃止
         ActivityManager manager = (ActivityManager) mContext.getSystemService( Context.ACTIVITY_SERVICE );
+
+        if ( manager == null ) return false;
+
         for ( ActivityManager.RunningServiceInfo serviceInfo : manager.getRunningServices(Integer.MAX_VALUE ) ) {
             if ( TelRecService.class.getName().equals( serviceInfo.service.getClassName() ) ) {
                 return true;
@@ -295,18 +383,57 @@ public class FragmentMain extends Fragment {
         TextView emptyTextView = mView.findViewById( R.id.emptyTextView );
         listView.setEmptyView( emptyTextView );
         listView.setAdapter( adapter );
+
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 //Log.d( LOG_TAG, "select->" + position );
                 ItemData item = (ItemData) parent.getItemAtPosition( position );
                 Log.d( LOG_TAG, "item->"+item.getDate()+" / "+item.getPhoneNumber() );
+                //Log.d( LOG_TAG, "isSelected()->" + view.isSelected() ); // setSelected(true) してからタップした場合の isSelected() を確認。isSelected()==falseでした。
 
-                DialogPlayVoice dialogPlayVoice = new DialogPlayVoice();  // --> new よりも newInstance() の方がいい？ 自作SFTPアプリではそうしてるんだけど・・。やり方が安定しないなぁ。まぁ、ケースバイケースで拡張性の要不要を熟慮すればいいんだけど・・・。
-                Bundle args = new Bundle();
-                args.putString( "target_file", item.getPhoneNumber() );
-                dialogPlayVoice.setArguments( args );
-                dialogPlayVoice.show( getFragmentManager(), "PlayVoice" );
+                Log.d( LOG_TAG, "mSelectedItem->" + mSelectedView );
+                if ( mSelectedView == null ) {
+                    DialogPlayVoice dialogPlayVoice = new DialogPlayVoice();  // --> new よりも newInstance() の方がいい？ 自作SFTPアプリではそうしてるんだけど・・。やり方が安定しないなぁ。まぁ、ケースバイケースで拡張性の要不要を熟慮すればいいんだけど・・・。
+                    Bundle args = new Bundle();
+                    args.putString( "target_file", item.getPhoneNumber() );
+                    dialogPlayVoice.setArguments( args );
+                    FragmentManager fm = getFragmentManager();
+                    if ( fm != null ) {
+                        dialogPlayVoice.show(fm, "PlayVoice");
+                    } else {
+                        Toast.makeText( mContext, "getFragmentManager() returned null.", Toast.LENGTH_LONG  ).show();
+                    }
+                } else {
+                    mSelectedView = null;
+                    mMenuType = MENU_TYPE_MAIN;
+                    ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
+//                    getActivity().invalidateOptionsMenu();
+                }
+            }
+        });
+
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                Log.d( LOG_TAG, "ListView longClick pos->" + position );
+
+                view.setSelected( !( view.isSelected() ) ); //true：バックグラウンド色が drawable/selector_list_item.xml で定義した色に変わる。
+                if ( view.isSelected() ) {
+                    mSelectedView = view;
+                }
+
+                //メニュー切り替え（削除を表示）
+                mMenuType = MENU_TYPE_FILE_DEL;
+                ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
+//                getActivity().invalidateOptionsMenu(); //--> onPrepareOptionsMenu()がCallされてるはずだが、Logを取るとonCreateOptionMenu() -> onPrepareOptionMenu()になっている・・・。
+//                                                        // 起動時はonPrepareOptionsMenu()が2回Callされてる。
+//                                                        // developer site によるとメニューの動的変更はonPrepareの方でするようだ。（そう認識してのだが。）
+//                                                        // 記載されている理由は、onCreateOptionsの方は一度しか呼ばれないからという事だがLogを取ってみると
+//                                                        // invalidateOptionsをCallすると呼ばれてる・・・。
+//                                                        // ActivityとFragmentでの違いであればFragmentでの説明でActivityを参考にと記載されているのは・・・。
+
+                return true; //onItemClick()には渡さない。長押しされた場合は選択中とする。
             }
         });
     }
@@ -315,7 +442,7 @@ public class FragmentMain extends Fragment {
         ArrayList<ItemData> arrayList = new ArrayList<>();
 
 //        File fileList = new File( mContext.getFilesDir() + "/telrec/" );
-        File fileList = new File( recFilePath + "/" );
+        File fileList = new File( REC_FILE_PATH + "/" );
         String[] dirList = fileList.list();
         if ( dirList == null || dirList.length <= 0 ) {
             return arrayList;
@@ -328,11 +455,11 @@ public class FragmentMain extends Fragment {
         for ( String item : dirList ) {
             Log.d( LOG_TAG, "file->" + item );
             ItemData itemData = new ItemData();
-            String date = item.toString().substring( 0, 8 ); // ファイル名からyyyymmdd を取得
+            String date = item.substring( 0, 8 ); // ファイル名からyyyymmdd を取得
             if ( prevDate.equals( date ) ) {
                 itemData.setDate( "" );
             } else {
-                StringBuilder stringBuilder = new StringBuilder(); //いつもStringBufferとStringBuilderで迷う。。。マルチスレッドではないからね。
+                StringBuilder stringBuilder = new StringBuilder(); //足し算で出来るけれど、、、。いつもStringBufferとStringBuilderで迷う。。。マルチスレッドではないからね。
                 stringBuilder.append( date.substring( 0, 4 ) );
                 stringBuilder.append( "/" );
                 stringBuilder.append( date.substring( 4, 6 ) );
@@ -352,8 +479,11 @@ public class FragmentMain extends Fragment {
     }
 
     private void setActionBar() {
-        ActionBar actionBar = ( (AppCompatActivity)getActivity() ).getSupportActionBar();
-        actionBar.setTitle( R.string.app_name );
+        ActionBar actionBar = ( (AppCompatActivity)mContext ).getSupportActionBar();
+//        ActionBar actionBar = ( (AppCompatActivity)getActivity() ).getSupportActionBar();
+        if ( actionBar != null ) {
+            actionBar.setTitle(R.string.app_name);
+        }
     }
 
     private void showSettingForm() {
@@ -365,10 +495,15 @@ public class FragmentMain extends Fragment {
         settingForm.setArguments( args );
 
         FragmentManager fragmentManager = getFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.replace( R.id.top_view, settingForm );
-        fragmentTransaction.addToBackStack( null );
-        fragmentTransaction.commit();
+        FragmentTransaction fragmentTransaction = null;
+        if (fragmentManager != null) {
+            fragmentTransaction = fragmentManager.beginTransaction();
+        }
+        if (fragmentTransaction != null) {
+            fragmentTransaction.replace( R.id.top_view, settingForm );
+            fragmentTransaction.addToBackStack( null );
+            fragmentTransaction.commit();
+        }
     }
 
     private void restoreSettingData() {
