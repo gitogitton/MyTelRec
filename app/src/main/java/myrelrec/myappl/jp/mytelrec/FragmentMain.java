@@ -1,9 +1,12 @@
 package myrelrec.myappl.jp.mytelrec;
 
+import android.app.Activity;
 import android.app.ActivityManager;
+import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -35,9 +38,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 
 public class FragmentMain extends Fragment {
+
+    public static boolean mModeSco = false;
 
     private final String LOG_TAG = getClass().getSimpleName();
     private final String SETTING_FILE_NAME = "setting.csv"; //format : [file format],[auto start],[use bluetooth]
@@ -50,6 +56,8 @@ public class FragmentMain extends Fragment {
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
 
+    private static final int REQ_SETTING = 0;
+
     private String mParam1;
     private String mParam2;
 
@@ -57,15 +65,11 @@ public class FragmentMain extends Fragment {
     private View mView;
     private SettingData mSettingData = new SettingData();
     private String mIntentFileType;
-    private boolean mRecActive = false;
     private View mSelectedView = null; //選択中（バックグランド色）を解除するため選択行のViewを保存
     private int mMenuType = MENU_TYPE_MAIN;
 
 //とりあえずコメント
 //    private MyBroadcastReceiver mMyReceiver = new MyBroadcastReceiver();
-
-    private MyPhoneStateListener mMyListener = null;
-    private TelephonyManager mTelephonyManager = null;
 
     public FragmentMain() {
         // Required empty public constructor
@@ -108,12 +112,8 @@ public class FragmentMain extends Fragment {
         Log.d( LOG_TAG, "onViewCreated() start." );
         showRecordingFileList();
         restoreSettingData();
-        if ( isRecordServiceAlive() ) { //通話録音サービスが起動中なら
-            mRecActive = true;
-        }
         if ( mSettingData.isAutoStart() ) { // autoStart が設定されているときはアプリ起動とともに録音モードに入る。
             startTelRecService();
-            mRecActive = true;
         }
     }
 
@@ -140,22 +140,12 @@ public class FragmentMain extends Fragment {
     public void onResume() {
         Log.d( LOG_TAG, "onResume() start." );
         super.onResume();
-
-        //リスナーの登録
-        if ( mTelephonyManager != null ) {
-            mTelephonyManager.listen ( mMyListener, PhoneStateListener.LISTEN_CALL_STATE ); // Listen for changes to the device call state. //
-        }
     }
 
     @Override
     public void onPause() {
         Log.d( LOG_TAG, "onPause() start." );
         super.onPause();
-
-        //リスナーの登録 解除
-        if ( mTelephonyManager != null ) {
-            mTelephonyManager.listen ( mMyListener, PhoneStateListener.LISTEN_NONE ); // Listen for changes to the device call state. //
-        }
     }
 
     @Override
@@ -182,7 +172,7 @@ public class FragmentMain extends Fragment {
         switchCompat.setTextOn( "On" );
         switchCompat.setShowText( true ); // <--- これがないと setTextOn(), setTextOff() が効かない・・・。
 
-        switchCompat.setChecked( mRecActive );
+        switchCompat.setChecked( isRecordServiceAlive() );
         switchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -205,6 +195,7 @@ public class FragmentMain extends Fragment {
         switch ( mMenuType ) {
             case MENU_TYPE_MAIN :
                 menu.findItem( R.id.menu_activate ).setVisible( true );
+                menu.findItem( R.id.menu_activate ).setChecked( isRecordServiceAlive() );
                 menu.findItem( R.id.menu_setting ).setVisible( true );
                 menu.findItem( R.id.menu_file_delete ).setVisible( false );
                 menu.findItem( R.id.menu_cancel ).setVisible( false );
@@ -256,6 +247,48 @@ public class FragmentMain extends Fragment {
 
     public interface OnFragmentInteractionListener {
         void onFragmentInteraction(Uri uri);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+//        super.onActivityResult(requestCode, resultCode, data);
+
+        if ( requestCode == REQ_SETTING ) { //設定画面からの戻り
+            Log.d( LOG_TAG, "setting data->" + mSettingData.getFormat() + " / " + mSettingData.isAutoStart() + " / " + mSettingData.isBluetooth() );
+
+            if ( isRecordServiceAlive() ) { //サービスを再起動する
+                stopTelRecService();
+                startTelRecService();
+            }
+
+            boolean useBluetooth = data.getBooleanExtra( "bluetooth", false );
+            Log.d( LOG_TAG, "onActivityResult() userBluetooth->" + useBluetooth );
+            if ( useBluetooth ) {
+
+                AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
+                if ( audioManager != null ) {
+                    audioManager.setMode( AudioManager.MODE_IN_CALL );
+                    audioManager.setBluetoothScoOn( true ); //scoモードに即入られるわけでなく、モード変更完了を待つ。
+                    mModeSco = true;
+                    Toast.makeText( mContext, "SCO mode [on]", Toast.LENGTH_LONG ).show();
+                } else {
+                    Toast.makeText( mContext, "Can't get AudioManager.[on]", Toast.LENGTH_LONG ).show();
+                }
+
+            } else {
+
+                AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
+                if ( audioManager != null ) {
+                    audioManager.stopBluetoothSco();
+                    audioManager.setMode( AudioManager.MODE_NORMAL );
+                    Toast.makeText( mContext, "SCO mode [off]", Toast.LENGTH_LONG ).show();
+                    mModeSco = false;
+                } else {
+                    Toast.makeText( mContext, "Can't get AudioManager.[off]", Toast.LENGTH_LONG ).show();
+                }
+
+            }
+        }
     }
 
     //
@@ -450,6 +483,7 @@ public class FragmentMain extends Fragment {
 
 //        Collections.sort( Arrays.asList( dirList ) );  //降順ソート
 //        Collections.reverse( Arrays.asList( dirList ) ); //昇順ソート
+        Collections.sort( Arrays.asList( dirList ), new FileNameComparator() ); //直近から古いものへとソート
 
         String prevDate = "";
         for ( String item : dirList ) {
@@ -473,8 +507,6 @@ public class FragmentMain extends Fragment {
             prevDate = date;
         }
 
-        Collections.sort( arrayList, new FileNameComparator() ); //直近から古いものへとソート
-
         return arrayList;
     }
 
@@ -488,7 +520,7 @@ public class FragmentMain extends Fragment {
 
     private void showSettingForm() {
 
-        FragmentSettingForm settingForm = FragmentSettingForm.newInstance( "", "" );
+        FragmentSettingForm settingForm = FragmentSettingForm.newInstance( this, REQ_SETTING );
 
         Bundle args = new Bundle();
         args.putSerializable( "SETTING", mSettingData );
