@@ -58,20 +58,9 @@ public class FragmentSettingForm extends Fragment {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment FragmentSettingForm.
-     */
-    public static FragmentSettingForm newInstance(String param1, String param2) {
+    public static FragmentSettingForm newInstance( Fragment targetFragment, int reqCode ) {
         FragmentSettingForm fragment = new FragmentSettingForm();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
+        fragment.setTargetFragment( targetFragment, reqCode );
         return fragment;
     }
 
@@ -121,6 +110,17 @@ public class FragmentSettingForm extends Fragment {
                     FragmentManager fragmentManager = getFragmentManager();
                     fragmentManager.popBackStack();
                     mListener.OnFinishSettingForm();
+
+                    LinearLayout bluetoothArea = mView.findViewById( R.id.set_bluetooth );
+                    Switch bluetooth = bluetoothArea.findViewById( R.id.switch_status );
+
+                    Intent intent = new Intent();
+                    intent.putExtra( "bluetooth", bluetooth.isChecked() );
+                    Fragment fragment = getTargetFragment();
+                    if ( fragment != null ) {
+                        fragment.onActivityResult(0, 0, intent );
+                    }
+
                     return true; // event処理をここで止める。
                 }
                 return false;
@@ -207,6 +207,17 @@ public class FragmentSettingForm extends Fragment {
                 FragmentManager fragmentManager = getFragmentManager();
                 fragmentManager.popBackStack();
                 mListener.OnFinishSettingForm();
+
+                LinearLayout bluetoothArea = mView.findViewById( R.id.set_bluetooth );
+                Switch bluetooth = bluetoothArea.findViewById( R.id.switch_status );
+
+                Intent intent = new Intent();
+                intent.putExtra( "bluetooth", bluetooth.isChecked() );
+                Fragment fragment = getTargetFragment();
+                if ( fragment != null ) {
+                    fragment.onActivityResult(0, 0, intent );
+                }
+
                 return true;
             }
             case R.id.menu_end_without_save : //保存せずに全画面に戻る。
