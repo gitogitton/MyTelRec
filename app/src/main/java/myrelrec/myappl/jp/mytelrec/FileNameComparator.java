@@ -2,12 +2,12 @@ package myrelrec.myappl.jp.mytelrec;
 
 import java.util.Comparator;
 
-public class FileNameComparator implements Comparator<ItemData> {
+public class FileNameComparator implements Comparator<String> {
     @Override
-    public int compare(ItemData o1, ItemData o2) {
+    public int compare(String o1, String o2) {
         //年月日_時分秒の部分だけで比較
-        String str1 = o1.getPhoneNumber().substring( 0, 15 );
-        String str2 = o2.getPhoneNumber().substring( 0, 15 );
+        String str1 = o1.substring( 0, 15 );
+        String str2 = o2.substring( 0, 15 );
 
         //
         //正：str1はstr2より大きい
