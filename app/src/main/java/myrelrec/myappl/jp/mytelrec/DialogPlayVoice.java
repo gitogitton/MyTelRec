@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.Objects;
 
@@ -96,11 +97,13 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
     public void onDetach() {
         Log.d( LOG_TAG, "onDetach()" );
 
-        mHandler.removeCallbacks( mRunnable );
+        if ( mMediaPlayer != null ) { //mMediaPlayerのcreate()に失敗した時はmHandler,mRunnableをnewしないので問題ないはず！
+            mHandler.removeCallbacks( mRunnable );
 
-        if ( mMediaPlayer.isPlaying() ) { mMediaPlayer.stop(); } //いらない？
-        mMediaPlayer.reset(); // mediaPlayer become idle.
-        mMediaPlayer.release();
+            if ( mMediaPlayer.isPlaying() ) { mMediaPlayer.stop(); } //いらない？
+            mMediaPlayer.reset(); // mediaPlayer become idle.
+            mMediaPlayer.release();
+        }
 
         super.onDetach();
     }
@@ -224,6 +227,10 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
         //
         Log.d( LOG_TAG, "mediaPlayter start." );
         mMediaPlayer = MediaPlayer.create( mContext, Uri.parse( mFilePath + mMessage ) );
+        if ( mMediaPlayer == null ) {
+            Toast.makeText( mContext, "MediaPlayer is null. ["+mMessage+"]", Toast.LENGTH_LONG ).show();
+            return;
+        }
         mMediaPlayer.setOnErrorListener( this );
         mMediaPlayer .setVolume( (float) 1.0, (float)1.0 ); // 0.0 - 1.0
         mMediaPlayer .setLooping( false );
