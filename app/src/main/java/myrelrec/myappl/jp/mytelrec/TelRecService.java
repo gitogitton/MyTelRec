@@ -58,6 +58,7 @@ public class TelRecService extends Service {
             builder.setContentTitle( "通話記録中" );
             builder.setContentText( "これは setContextText() です" );
             builder.setTicker( "setTicker() です。" );
+            builder.addAction( R.drawable.ic_settings_white_24dp, "OK(表示してみただけです。)", (PendingIntent)null ); //ContentTextの下にでる。OK/Cancelボタンなど何某かのAction(PendingIntentで指定するのだろう)につなげる。APIレベルで・・・。とりあえず出たので。
             builder.setContentIntent( pendingIntent );
 
             startForeground( 111, builder.build() ); // id=0はダメ！！
