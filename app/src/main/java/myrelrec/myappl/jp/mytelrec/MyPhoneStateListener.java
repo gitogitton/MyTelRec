@@ -17,7 +17,7 @@ public class MyPhoneStateListener extends PhoneStateListener {
     private final String recFilePath = "/storage/sdcard0/telrec";      //録音ファイルの保存先
     private boolean mRecNow = false; //録音中はtrue
     private boolean mReceive = false; //着信の場合にtrue
-    private MediaRecorder mMediaRecorder = new MediaRecorder();
+    private MediaRecorder mMediaRecorder = null;
     private Context mContext;
     private String mFileType;
 
@@ -39,11 +39,14 @@ public class MyPhoneStateListener extends PhoneStateListener {
             case TelephonyManager.CALL_STATE_IDLE: //待ち受け（終了時）
                 Toast.makeText( mContext, "待ち受け", Toast.LENGTH_LONG ).show();
 //                Log.d( LOG_TAG, "待ち受け ( mRecNow->"+mRecNow+" )" );
-                if ( mRecNow) {
-                    mMediaRecorder.stop();
-                    mMediaRecorder.reset();   //オブジェクトのリセット
-                    //release()前であればsetAudioSourceメソッドを呼び出すことで再利用可能
-                    mMediaRecorder.release(); //
+                if ( mRecNow ) {
+                    if ( mMediaRecorder != null ) {
+                        mMediaRecorder.stop();
+                        mMediaRecorder.reset();   //オブジェクトのリセット
+                        //release()前であればsetAudioSourceメソッドを呼び出すことで再利用可能
+                        mMediaRecorder.release(); //
+                        mMediaRecorder = null;
+                    }
                     mRecNow = false;
                     mReceive = false;
                 }
@@ -119,6 +122,7 @@ public class MyPhoneStateListener extends PhoneStateListener {
                 }
             }
 
+            mMediaRecorder = new MediaRecorder();
 
             //音声ソースを指定
             //            mediaRecorder.setAudioSource( MediaRecorder.AudioSource.MIC );
