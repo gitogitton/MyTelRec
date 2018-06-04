@@ -15,6 +15,11 @@ import java.util.ArrayList;
 
 public class RecordingFileListAdapter extends ArrayAdapter<ItemData> {
 
+    class ViewHolder {
+        TextView textDate;
+        TextView textPhoneNumber;
+    }
+
     private int mResourceId;
     private Context mContext;
     private LayoutInflater mLayoutInflater;
@@ -33,23 +38,56 @@ public class RecordingFileListAdapter extends ArrayAdapter<ItemData> {
         return mArrayList==null ? 0:mArrayList.size();
     }
 
+    @Override
+    public boolean isEnabled(int position) {
+        return getItem(position).getDate().equals( "" );
+    }
+
     @NonNull
     @Override
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+
+        ViewHolder viewHolder;
+
         if ( convertView == null ) {
             convertView = mLayoutInflater.inflate( mResourceId, parent, false );
+            viewHolder = new ViewHolder();
+            viewHolder.textDate = convertView.findViewById( R.id.text_date );
+            viewHolder.textPhoneNumber = convertView.findViewById( R.id.text_phoneNumber );
+            convertView.setTag( viewHolder );
+        } else {
+            viewHolder = (ViewHolder) convertView.getTag();
         }
 
         ItemData itemData = getItem( position );
 
-        TextView textDate = convertView.findViewById( R.id.text_date );
-        TextView textNumber = convertView.findViewById( R.id.text_phoneNumber );
-        if ( itemData.getDate().equals( "" ) ) {
-            textDate.setVisibility( View.GONE ); //詰めて非表示
+        if ( isEnabled( position ) ) {
+            viewHolder.textDate.setVisibility( View.GONE );
+            viewHolder.textPhoneNumber.setVisibility( View.VISIBLE );
+            if ( itemData != null ) {
+                viewHolder.textPhoneNumber.setText( itemData.getPhoneNumber() );
+            }
         } else {
-            textDate.setText( itemData.getDate() );
+            viewHolder.textDate.setVisibility( View.VISIBLE );
+            if ( itemData != null ) {
+                viewHolder.textDate.setText( itemData.getDate() );
+            }
+            viewHolder.textPhoneNumber.setVisibility( View.GONE );
         }
-        textNumber.setText( itemData.getPhoneNumber() );
+
+//ListViewのリストを日付でグループ分けする。このままでは出来ないので修正
+//        TextView textDate = convertView.findViewById( R.id.text_date );
+//        TextView textNumber = convertView.findViewById( R.id.text_phoneNumber );
+//
+//        if ( itemData.getDate().equals( "" ) ) {
+//            Log.d( "test", "  --GONE" );
+//            textDate.setVisibility( View.GONE ); //詰めて非表示
+//        } else {
+//            textDate.setText( itemData.getDate() );
+//        }
+//        textNumber.setText( itemData.getPhoneNumber() );
+//
+
 
         return convertView;
     }
