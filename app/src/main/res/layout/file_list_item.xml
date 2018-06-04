@@ -11,7 +11,6 @@
         android:id="@+id/text_date"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="5dp"
         android:text="@string/text_defaultString"
         android:textSize="@dimen/textSize_medium"
         android:textColor="@color/colorAccent"/>
@@ -20,8 +19,6 @@
         android:id="@+id/text_phoneNumber"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp"
         android:text="@string/text_defaultString"
         android:textSize="@dimen/textSize_large"
         app:layout_constraintTop_toBottomOf="@+id/text_date" />

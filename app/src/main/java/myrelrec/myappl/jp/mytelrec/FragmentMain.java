@@ -28,6 +28,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -414,6 +415,7 @@ public class FragmentMain extends Fragment {
 
         ListView listView = mView.findViewById( R.id.list_recordFileList );
         TextView emptyTextView = mView.findViewById( R.id.emptyTextView );
+
         listView.setEmptyView( emptyTextView );
         listView.setAdapter( adapter );
 
@@ -488,22 +490,36 @@ public class FragmentMain extends Fragment {
         String prevDate = "";
         for ( String item : dirList ) {
             Log.d( LOG_TAG, "file->" + item );
-            ItemData itemData = new ItemData();
+//            ItemData itemData = new ItemData();
             String date = item.substring( 0, 8 ); // ファイル名からyyyymmdd を取得
-            if ( prevDate.equals( date ) ) {
-                itemData.setDate( "" );
-            } else {
-                StringBuilder stringBuilder = new StringBuilder(); //足し算で出来るけれど、、、。いつもStringBufferとStringBuilderで迷う。。。マルチスレッドではないからね。
-                stringBuilder.append( date.substring( 0, 4 ) );
-                stringBuilder.append( "/" );
-                stringBuilder.append( date.substring( 4, 6 ) );
-                stringBuilder.append( "/" );
-                stringBuilder.append( date.substring( 6, 8 ) );
+//            if ( prevDate.equals( date ) ) {
+//                itemData.setDate( "" );
+//            } else {
+//                StringBuilder stringBuilder = new StringBuilder(); //足し算で出来るけれど、、、。いつもStringBufferとStringBuilderで迷う。。。マルチスレッドではないからね。
+//                stringBuilder.append( date.substring( 0, 4 ) );
+//                stringBuilder.append( "/" );
+//                stringBuilder.append( date.substring( 4, 6 ) );
+//                stringBuilder.append( "/" );
+//                stringBuilder.append( date.substring( 6, 8 ) );
+//
+//                itemData.setDate( stringBuilder.toString() );
+//            }
+//            itemData.setPhoneNumber( item );
+//            arrayList.add( itemData );
 
-                itemData.setDate( stringBuilder.toString() );
+            if ( !prevDate.equals( date ) ) {
+                ItemData itemData = new ItemData();
+                itemData.setDate( date.substring( 0, 4 )+"/"+date.substring( 4, 6 )+"/"+date.substring( 6, 8 ) );
+                itemData.setPhoneNumber( "" );
+                arrayList.add( itemData );
             }
+
+            ItemData itemData = new ItemData();
+            itemData.setDate( "" );
             itemData.setPhoneNumber( item );
+
             arrayList.add( itemData );
+
             prevDate = date;
         }
 
