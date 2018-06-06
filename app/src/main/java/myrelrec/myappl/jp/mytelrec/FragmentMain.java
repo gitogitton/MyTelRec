@@ -193,6 +193,7 @@ public class FragmentMain extends Fragment {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 //Log.d( LOG_TAG, "onCheckedChanged()" );
                 if ( isChecked ) {
+                    setReceiver();
                     startTelRecService();
                 } else {
                     resetReceiver();
