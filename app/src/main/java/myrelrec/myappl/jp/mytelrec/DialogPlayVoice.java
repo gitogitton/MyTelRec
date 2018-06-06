@@ -168,8 +168,8 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
                 }
                 int setVolumeValue = (int)( (float)volumeMax * (float)mLastProgress/(float)seekBarVolume.getMax() );
                 if (audioManager != null) {
-//                    audioManager.setStreamVolume( AudioManager.STREAM_MUSIC, setVolumeValue, AudioManager.FLAG_SHOW_UI ); // デバッグ終わると変更 : third argument -> AudioManager.FLAG_VIBRATE
-                    audioManager.setStreamVolume( AudioManager.STREAM_MUSIC, setVolumeValue, AudioManager.FLAG_VIBRATE );
+                    audioManager.setStreamVolume( AudioManager.STREAM_MUSIC, setVolumeValue, AudioManager.FLAG_SHOW_UI );
+                    //audioManager.setStreamVolume( AudioManager.STREAM_MUSIC, setVolumeValue, AudioManager.FLAG_VIBRATE );
                 }
 
 //                Log.d( LOG_TAG, "seekBarVolume.onStopTrackingTouch() Volume : getMax() / lastProgress->" + seekBarVolume.getMax() + " / " + mLastProgress );
