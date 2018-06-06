@@ -1,11 +1,10 @@
 package myrelrec.myappl.jp.mytelrec;
 
-import android.app.Activity;
 import android.app.ActivityManager;
-import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -17,8 +16,6 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
-import android.telephony.PhoneStateListener;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -28,7 +25,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.CompoundButton;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -43,8 +39,6 @@ import java.util.Arrays;
 import java.util.Collections;
 
 public class FragmentMain extends Fragment {
-
-    public static boolean mModeSco = false;
 
     private final String LOG_TAG = getClass().getSimpleName();
     private final String SETTING_FILE_NAME = "setting.csv"; //format : [file format],[auto start],[use bluetooth]
@@ -69,8 +63,7 @@ public class FragmentMain extends Fragment {
     private View mSelectedView = null; //選択中（バックグランド色）を解除するため選択行のViewを保存
     private int mMenuType = MENU_TYPE_MAIN;
 
-//とりあえずコメント
-//    private MyBroadcastReceiver mMyReceiver = new MyBroadcastReceiver();
+    private MyBroadcastReceiver mMyReceiver = null;
 
     public FragmentMain() {
         // Required empty public constructor
@@ -111,10 +104,19 @@ public class FragmentMain extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         Log.d( LOG_TAG, "onViewCreated() start." );
+
         showRecordingFileList();
         restoreSettingData();
+
         if ( mSettingData.isAutoStart() ) { // autoStart が設定されているときはアプリ起動とともに録音モードに入る。
             startTelRecService();
+        }
+
+        AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
+        if ( audioManager != null ) {
+            if ( !audioManager.isBluetoothScoOn() ) {
+                mSettingData.setBluetooth( false );
+            }
         }
     }
 
@@ -126,33 +128,41 @@ public class FragmentMain extends Fragment {
 
     @Override
     public void onDetach() {
-//        Log.d( LOG_TAG, "MyBoadcastReceiver is un-registered ! (onDetach)" );
-//        LocalBroadcastManager.getInstance( mContext ).unregisterReceiver( mMyReceiver );
+        Log.d( LOG_TAG, "onDetach()" );
         super.onDetach();
     }
 
     @Override
     public void onStart() {
-        Log.d( LOG_TAG, "onStart() start." );
+        Log.d( LOG_TAG, "onStart()" );
         super.onStart();
     }
 
     @Override
     public void onResume() {
-        Log.d( LOG_TAG, "onResume() start." );
+        Log.d( LOG_TAG, "onResume()" );
         super.onResume();
+        refreshListAll();
     }
 
     @Override
     public void onPause() {
-        Log.d( LOG_TAG, "onPause() start." );
+        Log.d( LOG_TAG, "onPause()" );
         super.onPause();
     }
 
     @Override
     public void onStop() {
-        Log.d( LOG_TAG, "onStop() start." );
+        Log.d( LOG_TAG, "onStop()" );
         super.onStop();
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.d( LOG_TAG, "onDestroy()" );
+        super.onDestroy();
+        resetReceiver();
+        //setBluetoothOff();
     }
 
     @Override
@@ -177,7 +187,7 @@ public class FragmentMain extends Fragment {
         switchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                Log.d( LOG_TAG, "onCheckedChanged()" );
+                //Log.d( LOG_TAG, "onCheckedChanged()" );
                 if ( isChecked ) {
                     startTelRecService();
                 } else {
@@ -220,24 +230,22 @@ public class FragmentMain extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch ( item.getItemId() ) {
             case R.id.menu_setting :
-                Log.d( LOG_TAG, "select menu_setting." );
+                //Log.d( LOG_TAG, "select menu_setting." );
                 showSettingForm();
                 break;
             case R.id.menu_file_delete : // ファイル削除
                 if ( mSelectedView != null ) {
                     deleteSpecifiedFile();
-                    refreshList();
+                    refreshListWithRemove();
                     mSelectedView = null;
                 }
                 mMenuType = MENU_TYPE_MAIN;
                 ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
-//                getActivity().invalidateOptionsMenu();
                 break;
             case R.id.menu_cancel : //ファイル削除 中止
                 mMenuType = MENU_TYPE_MAIN;
                 mSelectedView.setSelected( false );
                 ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
-//                getActivity().invalidateOptionsMenu();
                 mSelectedView = null;
                 break;
             default:
@@ -252,10 +260,10 @@ public class FragmentMain extends Fragment {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-//        super.onActivityResult(requestCode, resultCode, data);
+        //super.onActivityResult(requestCode, resultCode, data);
 
         if ( requestCode == REQ_SETTING ) { //設定画面からの戻り
-            Log.d( LOG_TAG, "setting data->" + mSettingData.getFormat() + " / " + mSettingData.isAutoStart() + " / " + mSettingData.isBluetooth() );
+            //Log.d( LOG_TAG, "setting data->" + mSettingData.getFormat() + " / " + mSettingData.isAutoStart() + " / " + mSettingData.isBluetooth() );
 
             if ( isRecordServiceAlive() ) { //サービスを再起動する
                 stopTelRecService();
@@ -263,31 +271,24 @@ public class FragmentMain extends Fragment {
             }
 
             boolean useBluetooth = data.getBooleanExtra( "bluetooth", false );
-            Log.d( LOG_TAG, "onActivityResult() userBluetooth->" + useBluetooth );
-            if ( useBluetooth ) {
+            //Log.d( LOG_TAG, "onActivityResult() userBluetooth->" + useBluetooth );
 
-                AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
-                if ( audioManager != null ) {
-                    audioManager.setMode( AudioManager.MODE_IN_CALL );
-                    audioManager.setBluetoothScoOn( true ); //scoモードに即入られるわけでなく、モード変更完了を待つ。
-                    mModeSco = true;
-                    Toast.makeText( mContext, "SCO mode [on]", Toast.LENGTH_LONG ).show();
-                } else {
-                    Toast.makeText( mContext, "Can't get AudioManager.[on]", Toast.LENGTH_LONG ).show();
-                }
-
+            if ( useBluetooth ) { //bluetoothデバイスを使用する、が返ってきた場合使えるようにする
+                //
+                //TelRecServiceにBindしてBluetoothSCOモードOnを通知する。
+                // 通知を受けたService側でAudioManagerをBluetoothScoモードをOnにする。
+                //Unbind()を忘れない事！！
+                //
+                setReceiver();
+                setBluetoothOn();
             } else {
-
-                AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
-                if ( audioManager != null ) {
-                    audioManager.stopBluetoothSco();
-                    audioManager.setMode( AudioManager.MODE_NORMAL );
-                    Toast.makeText( mContext, "SCO mode [off]", Toast.LENGTH_LONG ).show();
-                    mModeSco = false;
-                } else {
-                    Toast.makeText( mContext, "Can't get AudioManager.[off]", Toast.LENGTH_LONG ).show();
-                }
-
+                //
+                //TelRecServiceにBindしてBluetoothSCOモードOffを通知する。
+                // 通知を受けたService側でAudioManagerをBluetoothScoモードをOffにする。
+                //Unbind()を忘れない事！！
+                //
+                resetReceiver();
+                setBluetoothOff();
             }
         }
     }
@@ -295,7 +296,72 @@ public class FragmentMain extends Fragment {
     //
     //private methods
     //
-    private void refreshList() {
+    private void setReceiver() {
+        IntentFilter intentFilter = new IntentFilter( AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED );  //Broadcast intent action indicating that the call state on the device has changed.
+        mMyReceiver = new MyBroadcastReceiver();
+        Intent returnedIntent = mContext.registerReceiver( mMyReceiver, intentFilter );
+        if ( returnedIntent == null ) {
+            Log.d( LOG_TAG, "returnedIntent is null" );
+        }
+    }
+
+    private void resetReceiver() {
+        if ( mMyReceiver != null ) {
+            mContext.unregisterReceiver( mMyReceiver );
+            mMyReceiver = null;
+        }
+    }
+
+    private void setBluetoothOn() {
+        AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
+        if ( audioManager != null ) {
+            if (!audioManager.isBluetoothScoOn()) {
+                audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+                audioManager.setBluetoothScoOn(true);
+                audioManager.startBluetoothSco(); //scoモードに即入られるわけでなく、モード変更完了を待つ。
+                Toast.makeText(mContext, "SCO mode [on]", Toast.LENGTH_LONG).show();
+                //Log.d(LOG_TAG, "SCO mode [on]");
+            } else {
+                Toast.makeText(mContext, "already SCO mode is already ON. [on]", Toast.LENGTH_LONG).show();
+                //Log.d(LOG_TAG, "already SCO mode is already ON. [on]");
+            }
+        } else {
+            Toast.makeText(mContext, "AudioManager Get ERROR. [sco on]", Toast.LENGTH_LONG).show();
+            //Log.d( LOG_TAG, "AudioManager Get ERROR. [sco on]" );
+        }
+    }
+
+    private void setBluetoothOff() {
+        AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
+        if ( audioManager != null ) {
+            if ( audioManager.isBluetoothScoOn()) {
+                audioManager.stopBluetoothSco();
+                audioManager.setBluetoothScoOn( false );
+                audioManager.setMode( AudioManager.MODE_NORMAL );
+                Toast.makeText(mContext, "SCO mode [off]", Toast.LENGTH_LONG).show();
+                //Log.d( LOG_TAG, "SCO mode [off]" );
+            } else {
+                Toast.makeText( mContext, "SCO mode is already OFF. [off]", Toast.LENGTH_LONG ).show();
+                //Log.d( LOG_TAG, "SCO mode is already OFF. [off]" );
+            }
+        } else {
+            Toast.makeText( mContext, "AudioManager Get ERROR. [sco off]", Toast.LENGTH_LONG ).show();
+            //Log.d( LOG_TAG, "AudioManager Get ERROR. [sco off]" );
+        }
+    }
+
+    private void refreshListAll() {
+        ArrayList<ItemData> arrayList = getFileList();
+        RecordingFileListAdapter adapter = new RecordingFileListAdapter( mContext, R.layout.file_list_item, arrayList );
+
+        ListView listView = mView.findViewById( R.id.list_recordFileList );
+        TextView emptyTextView = mView.findViewById( R.id.emptyTextView );
+
+        listView.setEmptyView( emptyTextView );
+        listView.setAdapter( adapter );
+    }
+
+    private void refreshListWithRemove() {
         TextView textView = mSelectedView.findViewById( R.id.text_phoneNumber );
         String fileName = textView.getText().toString();
 
@@ -312,11 +378,11 @@ public class FragmentMain extends Fragment {
     }
 
     private void deleteSpecifiedFile() {
-        Log.d( LOG_TAG, "deleteSpecifiedFile() Go !!" );
+        //Log.d( LOG_TAG, "deleteSpecifiedFile() Go !!" );
 
         TextView textFileName = mSelectedView.findViewById( R.id.text_phoneNumber );
         String fileName = REC_FILE_PATH + "/" + textFileName.getText().toString();
-        Log.d( LOG_TAG, "deleted file -> " + fileName );
+        //Log.d( LOG_TAG, "deleted file -> " + fileName );
 
         File file = new File( fileName );
         if ( file.exists() ) {
@@ -346,54 +412,36 @@ public class FragmentMain extends Fragment {
     }
 
     private void startTelRecService() {
-
-// とりあえずコメント。リスナー置き換え＆キャンセルから始めよう・・
-//        //BroadcastReceiver
-//        IntentFilter intentFilter = new IntentFilter( TelephonyManager.ACTION_PHONE_STATE_CHANGED );  //Broadcast intent action indicating that the call state on the device has changed.
-//        intentFilter.addAction( "android.intent.action.NEW_OUTGOING_CALL" );
-////        mContext.registerReceiver( myReceiver, intentFilter );
-//        LocalBroadcastManager.getInstance( mContext ).registerReceiver( mMyReceiver, intentFilter ); //アプリ内でしか使わないブロードキャスト(その方が安心・・・)
-//
-//        Log.d( LOG_TAG, "MyBroadcastReceiver is registered !" );
-
-//// とりあえずコメント。Broadcastの理解に努めよう。
         //
         //サービス開始処理
         //　 開始出来た場合や既にある場合はその情報が返ってくる。
         //   起動失敗すると null で返ってくる。（と以下の英文を読んだからサービスが既に存在するか否かのチェックはいらない！！！、、と思った。）
         //
-
         // If the service is being started or is already running, the ComponentName of the actual service that was started is returned;
         // else if the service does not exist null is returned. (wrote by google site)
-//        Intent intent = new Intent( mContext, TelRecIntentService.class );
+        //
         Intent intent = new Intent( mContext, TelRecService.class );
         mIntentFileType = mSettingData.getFormat();
         intent.putExtra( KEY_FILE_TYPE, mIntentFileType);
         ComponentName componentName = mContext.startService( intent );
         if ( componentName == null ) {
-            Log.d( LOG_TAG, "Service doesn't exist." );
+            //Log.d( LOG_TAG, "Service doesn't exist." );
+            Toast.makeText( mContext, "Service doesn't exist.", Toast.LENGTH_LONG ).show();
             return;
+//        } else {
+//            Log.d( LOG_TAG, "componentName.getClassName()->"+componentName.getClassName() );
+//            Log.d( LOG_TAG, "componentName.toString()->"+componentName.toString() );
         }
 
-        Log.d( LOG_TAG, "Service is started." );
-
+        Toast.makeText( mContext, "Service is started.", Toast.LENGTH_LONG ).show();
+        //Log.d( LOG_TAG, "Service is started." );
     }
 
     private void stopTelRecService() {
 
-// とりあえずコメント。リスナー置き換え＆キャンセルから始めよう・・
-//        //BroadcastReceiver
-////        mContext.unregisterReceiver( mMyReceiver ); //Unregister a previously registered BroadcastReceiver. All filters that have been registered for this BroadcastReceiver will be removed.
-//        LocalBroadcastManager.getInstance( mContext ).unregisterReceiver( mMyReceiver );
-//
-//        Log.d( LOG_TAG, "MyBroadcastReceiver is un-registered !" );
-
-//// とりあえずコメント。Broadcastの理解に努めよう。
         //
         //サービス終了処理
         //
-
-//        Intent intent = new Intent( mContext, TelRecIntentService.class );
         Intent intent = new Intent( mContext, TelRecService.class );
         intent.putExtra(KEY_FILE_TYPE, mIntentFileType);
         // If there is a service matching the given Intent that is already running,
@@ -401,11 +449,13 @@ public class FragmentMain extends Fragment {
         // else false is returned.  (wrote by google site)
         boolean result = mContext.stopService( intent );
         if ( !result ) {
-            Log.d( LOG_TAG, "Service is not found." );
+            Toast.makeText( mContext, "Service is not found.", Toast.LENGTH_LONG ).show();
+            //Log.d( LOG_TAG, "Service is not found." );
             return;
         }
 
-        Log.d( LOG_TAG, "Service is stopped." );
+        Toast.makeText( mContext, "Service is stopped.", Toast.LENGTH_LONG ).show();
+        //Log.d( LOG_TAG, "Service is stopped." );
     }
 
     private void showRecordingFileList() {
@@ -424,10 +474,10 @@ public class FragmentMain extends Fragment {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 //Log.d( LOG_TAG, "select->" + position );
                 ItemData item = (ItemData) parent.getItemAtPosition( position );
-                Log.d( LOG_TAG, "item->"+item.getDate()+" / "+item.getPhoneNumber() );
+                //Log.d( LOG_TAG, "item->"+item.getDate()+" / "+item.getPhoneNumber() );
                 //Log.d( LOG_TAG, "isSelected()->" + view.isSelected() ); // setSelected(true) してからタップした場合の isSelected() を確認。isSelected()==falseでした。
 
-                Log.d( LOG_TAG, "mSelectedItem->" + mSelectedView );
+                //Log.d( LOG_TAG, "mSelectedItem->" + mSelectedView );
                 if ( mSelectedView == null ) {
                     DialogPlayVoice dialogPlayVoice = new DialogPlayVoice();  // --> new よりも newInstance() の方がいい？ 自作SFTPアプリではそうしてるんだけど・・。やり方が安定しないなぁ。まぁ、ケースバイケースで拡張性の要不要を熟慮すればいいんだけど・・・。
                     Bundle args = new Bundle();
@@ -443,7 +493,6 @@ public class FragmentMain extends Fragment {
                     mSelectedView = null;
                     mMenuType = MENU_TYPE_MAIN;
                     ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
-//                    getActivity().invalidateOptionsMenu();
                 }
             }
         });
@@ -451,7 +500,7 @@ public class FragmentMain extends Fragment {
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                Log.d( LOG_TAG, "ListView longClick pos->" + position );
+                //Log.d( LOG_TAG, "ListView longClick pos->" + position );
 
                 view.setSelected( !( view.isSelected() ) ); //true：バックグラウンド色が drawable/selector_list_item.xml で定義した色に変わる。
                 if ( view.isSelected() ) {
@@ -461,12 +510,6 @@ public class FragmentMain extends Fragment {
                 //メニュー切り替え（削除を表示）
                 mMenuType = MENU_TYPE_FILE_DEL;
                 ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
-//                getActivity().invalidateOptionsMenu(); //--> onPrepareOptionsMenu()がCallされてるはずだが、Logを取るとonCreateOptionMenu() -> onPrepareOptionMenu()になっている・・・。
-//                                                        // 起動時はonPrepareOptionsMenu()が2回Callされてる。
-//                                                        // developer site によるとメニューの動的変更はonPrepareの方でするようだ。（そう認識してのだが。）
-//                                                        // 記載されている理由は、onCreateOptionsの方は一度しか呼ばれないからという事だがLogを取ってみると
-//                                                        // invalidateOptionsをCallすると呼ばれてる・・・。
-//                                                        // ActivityとFragmentでの違いであればFragmentでの説明でActivityを参考にと記載されているのは・・・。
 
                 return true; //onItemClick()には渡さない。長押しされた場合は選択中とする。
             }
@@ -476,7 +519,6 @@ public class FragmentMain extends Fragment {
     private ArrayList<ItemData> getFileList() {
         ArrayList<ItemData> arrayList = new ArrayList<>();
 
-//        File fileList = new File( mContext.getFilesDir() + "/telrec/" );
         File fileList = new File( REC_FILE_PATH + "/" );
         String[] dirList = fileList.list();
         if ( dirList == null || dirList.length <= 0 ) {
@@ -489,23 +531,9 @@ public class FragmentMain extends Fragment {
 
         String prevDate = "";
         for ( String item : dirList ) {
-            Log.d( LOG_TAG, "file->" + item );
-//            ItemData itemData = new ItemData();
+//            Log.d( LOG_TAG, "file->" + item );
+
             String date = item.substring( 0, 8 ); // ファイル名からyyyymmdd を取得
-//            if ( prevDate.equals( date ) ) {
-//                itemData.setDate( "" );
-//            } else {
-//                StringBuilder stringBuilder = new StringBuilder(); //足し算で出来るけれど、、、。いつもStringBufferとStringBuilderで迷う。。。マルチスレッドではないからね。
-//                stringBuilder.append( date.substring( 0, 4 ) );
-//                stringBuilder.append( "/" );
-//                stringBuilder.append( date.substring( 4, 6 ) );
-//                stringBuilder.append( "/" );
-//                stringBuilder.append( date.substring( 6, 8 ) );
-//
-//                itemData.setDate( stringBuilder.toString() );
-//            }
-//            itemData.setPhoneNumber( item );
-//            arrayList.add( itemData );
 
             if ( !prevDate.equals( date ) ) {
                 ItemData itemData = new ItemData();
@@ -528,7 +556,6 @@ public class FragmentMain extends Fragment {
 
     private void setActionBar() {
         ActionBar actionBar = ( (AppCompatActivity)mContext ).getSupportActionBar();
-//        ActionBar actionBar = ( (AppCompatActivity)getActivity() ).getSupportActionBar();
         if ( actionBar != null ) {
             actionBar.setTitle(R.string.app_name);
         }
