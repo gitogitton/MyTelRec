@@ -1,6 +1,7 @@
 package myrelrec.myappl.jp.mytelrec;
 
 import android.content.Context;
+import android.media.AudioManager;
 import android.media.MediaRecorder;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
@@ -34,11 +35,25 @@ public class MyPhoneStateListener extends PhoneStateListener {
 
         Log.d( LOG_TAG, "state :" + state );
 
+
+        //for debug
+        AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
+        if ( audioManager != null ) {
+            if ( audioManager.isBluetoothScoOn() ) {
+                Log.d( LOG_TAG, "SCO on !!" );
+            } else {
+                Log.d( LOG_TAG, "SCO off !!" );
+            }
+        } else {
+            Log.d( LOG_TAG, "AudioManager is null !" );
+        }
+
+
         switch( state ){
 
             case TelephonyManager.CALL_STATE_IDLE: //待ち受け（終了時）
                 Toast.makeText( mContext, "待ち受け", Toast.LENGTH_LONG ).show();
-//                Log.d( LOG_TAG, "待ち受け ( mRecNow->"+mRecNow+" )" );
+                Log.d( LOG_TAG, "待ち受け ( mRecNow->"+mRecNow+" )" );
                 if ( mRecNow ) {
                     if ( mMediaRecorder != null ) {
                         mMediaRecorder.stop();
@@ -54,14 +69,14 @@ public class MyPhoneStateListener extends PhoneStateListener {
 
             case TelephonyManager.CALL_STATE_RINGING: //着信
 //                Toast.makeText( mContext, "着信："+callNumber, Toast.LENGTH_LONG ).show();
-//                Log.d( LOG_TAG, "着信："+callNumber );
+                Log.d( LOG_TAG, "着信："+callNumber );
                 mRecNow = false; //着信があるという事は通話中ではないと断定してしまう。キャッチホンとかあるのかな・・・。留守電モードとか・・・。
                 mReceive = true;
                 break;
 
             case TelephonyManager.CALL_STATE_OFFHOOK: //通話
 //                Toast.makeText( mContext, "受話／発信", Toast.LENGTH_LONG ).show();
-//                Log.d( LOG_TAG, "受話／発信 ( mRecNow->"+mRecNow+" )" );
+                Log.d( LOG_TAG, "受話／発信 ( mRecNow->"+mRecNow+" )" );
 
                 //
                 //録音
@@ -125,8 +140,19 @@ public class MyPhoneStateListener extends PhoneStateListener {
             mMediaRecorder = new MediaRecorder();
 
             //音声ソースを指定
-            //            mediaRecorder.setAudioSource( MediaRecorder.AudioSource.MIC );
-            mMediaRecorder.setAudioSource( MediaRecorder.AudioSource.VOICE_CALL ); //電話の受話送話両方、、だと思う。
+            AudioManager audioManager = (AudioManager) mContext.getSystemService( Context.AUDIO_SERVICE );
+            if ( audioManager != null ) {
+                if ( audioManager.isBluetoothScoOn() ) {
+                    Log.d( LOG_TAG, "SCO mode is ON" );
+                    mMediaRecorder.setAudioSource( MediaRecorder.AudioSource.VOICE_COMMUNICATION );
+                } else {
+                    Log.d( LOG_TAG, "SCO mode is OFF" );
+                    mMediaRecorder.setAudioSource( MediaRecorder.AudioSource.VOICE_CALL ); //電話の受話送話両方、、だと思う。
+                }
+            } else {
+                Log.d( LOG_TAG, "AudioManager is null." );
+                mMediaRecorder.setAudioSource( MediaRecorder.AudioSource.VOICE_CALL ); //電話の受話送話両方、、だと思う。
+            }
 
             //
             //出力フォーマット      MediaRecorder.setOutputFormat()
