@@ -3,44 +3,35 @@ package myrelrec.myappl.jp.mytelrec;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.media.MediaRecorder;
-import android.telephony.PhoneStateListener;
-import android.telephony.TelephonyManager;
+import android.media.AudioManager;
 import android.util.Log;
-import android.widget.Toast;
 
-import java.io.File;
 
 public class MyBroadcastReceiver extends BroadcastReceiver {
 
     private final String LOG_TAG = getClass().getSimpleName();
 
     private Context mContext;
-    private boolean mIdle = true;
-    private MyPhoneStateListener mMyPhoneStateListener;
 
     @Override
     public void onReceive( Context context, Intent intent ) {
 
-        Log.d( LOG_TAG, "onReceive() start." );
+        Log.d( LOG_TAG, "onReceive() start.[Action->"+intent.getAction()+"]" );
 
         mContext = context;
-        mMyPhoneStateListener = new MyPhoneStateListener( mContext, "" ); //5/23: 今はこのクラスは使ってないので""で逃げておく。
 
-        try {
-
-            //TelephonyManagerの生成
-            TelephonyManager telephonyManager = (TelephonyManager) mContext.getSystemService( Context.TELEPHONY_SERVICE );
-            //リスナーの登録
-            if ( telephonyManager != null ) {
-                telephonyManager.listen ( mMyPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE ); // Listen for changes to the device call state. //
+        if ( AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED.equals( intent.getAction() ) ) {
+            int status = intent.getIntExtra( AudioManager.EXTRA_SCO_AUDIO_STATE, AudioManager.SCO_AUDIO_STATE_ERROR );
+            if ( status == AudioManager.SCO_AUDIO_STATE_CONNECTED ) {
+                //SCO audio channel is established
+                Log.d( LOG_TAG, "SCO_AUDIO_STATE_CONNECTED" );
+            } else if ( status == AudioManager.SCO_AUDIO_STATE_CONNECTING ){
+                //SCO audio channel is being established
+                Log.d( LOG_TAG, "SCO_AUDIO_STATE_CONNECTING" );
+            } else if ( status == AudioManager.SCO_AUDIO_STATE_DISCONNECTED ) {
+                //SCO audio channel is not established
+                Log.d( LOG_TAG, "SCO_AUDIO_STATE_DISCONNECTED" );
             }
-//リスナー解除方法
-//        telephonyManager.listen ( PhoneListener, PhoneStateListener.LISTEN_NONE (0)
-//        (Note: if you call this method while in the middle of a binder transaction, you must call clearCallingIdentity() before calling this method. A SecurityException will be thrown otherwise.)
-//
-        } catch ( Exception e ) {
-            Log.e( LOG_TAG, ":" + e );
         }
     }
 }
