@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -61,6 +62,9 @@ public class FragmentMain extends Fragment {
     private SettingData mSettingData = new SettingData();
     private String mIntentFileType;
     private View mSelectedView = null; //選択中（バックグランド色）を解除するため選択行のViewを保存
+//複数ファイル選択を可能にする（追加）
+    private ArrayList<String> mSelectedFiles = null;
+//複数ファイル選択を可能にする（追加ここまで）
     private int mMenuType = MENU_TYPE_MAIN;
 
     private MyBroadcastReceiver mMyReceiver = null;
@@ -235,9 +239,17 @@ public class FragmentMain extends Fragment {
                 break;
             case R.id.menu_file_delete : // ファイル削除
                 if ( mSelectedView != null ) {
-                    deleteSpecifiedFile();
-                    refreshListWithRemove();
+//複数ファイル選択を可能にする（コメント化）
+//                    deleteSpecifiedFile();
+//                    refreshListWithRemove();
+//複数ファイル選択を可能にする（コメント化ここまで）
+
+//複数ファイル選択を可能にする（追加）
+                    deleteSpecifiedFiles();
+                    refreshListAll();
+//複数ファイル選択を可能にする（追加ここまで）
                     mSelectedView = null;
+                    mSelectedFiles.clear();
                 }
                 mMenuType = MENU_TYPE_MAIN;
                 ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
@@ -246,7 +258,20 @@ public class FragmentMain extends Fragment {
                 mMenuType = MENU_TYPE_MAIN;
                 mSelectedView.setSelected( false );
                 ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
-                mSelectedView = null;
+//複数ファイルの選択を可能にする（コメント化）
+//                mSelectedView = null;
+//複数ファイルの選択を可能にする（コメント化ここまで）
+
+//複数ファイルの選択を可能にする（追加）
+                if ( mSelectedView != null ) { //ファイル選択中なら解除する
+                    Log.d( LOG_TAG, "selected file->"+mSelectedFiles );
+                    refreshListAll();
+                    mSelectedView = null;
+                    mSelectedFiles.clear();
+                    Log.d( LOG_TAG, "selected file (after clear)->"+mSelectedFiles );
+                }
+//複数ファイルの選択を可能にする（追加ここまで）
+
                 break;
             default:
                 break;
@@ -362,19 +387,41 @@ public class FragmentMain extends Fragment {
     }
 
     private void refreshListWithRemove() {
-        TextView textView = mSelectedView.findViewById( R.id.text_phoneNumber );
-        String fileName = textView.getText().toString();
+//複数ファイル選択に対応する。（コメント化）
+//        TextView textView = mSelectedView.findViewById( R.id.text_phoneNumber );
+//        String fileName = textView.getText().toString();
+//
+//        ListView listView = mView.findViewById( R.id.list_recordFileList );
+//        RecordingFileListAdapter adapter = (RecordingFileListAdapter) listView.getAdapter();
+//        for ( int i=0; i<adapter.getCount(); i++ ) {
+//            ItemData itemData = adapter.getItem( i );
+//            if ( itemData != null && fileName.equals( itemData.getPhoneNumber() ) ) {
+//                adapter.remove( itemData );
+//                break;
+//            }
+//        }
+//        adapter.notifyDataSetChanged();
+//複数ファイル選択に対応する。（コメント化ここまで）
+
+//複数ファイル選択に対応する。（追加）
+        if ( mSelectedFiles.size() <= 0 ) {
+            Toast.makeText( mContext, "No file selected !", Toast.LENGTH_LONG ).show();
+            return;
+        }
 
         ListView listView = mView.findViewById( R.id.list_recordFileList );
         RecordingFileListAdapter adapter = (RecordingFileListAdapter) listView.getAdapter();
-        for ( int i=0; i<adapter.getCount(); i++ ) {
-            ItemData itemData = adapter.getItem( i );
-            if ( itemData != null && fileName.equals( itemData.getPhoneNumber() ) ) {
-                adapter.remove( itemData );
-                break;
+        for ( String selectedFile : mSelectedFiles ) {
+            for ( int i=0; i<adapter.getCount(); i++ ) {
+                ItemData itemData = adapter.getItem( i );
+                if (itemData != null && selectedFile.equals(itemData.getPhoneNumber())) {
+                    adapter.remove(itemData);
+                    break;
+                }
             }
         }
         adapter.notifyDataSetChanged();
+//複数ファイル選択に対応する。（追加ここまで）
     }
 
     private void deleteSpecifiedFile() {
@@ -396,6 +443,32 @@ public class FragmentMain extends Fragment {
 
         mSelectedView.setSelected( false );
     }
+
+//複数ファイル選択を可能にする。（追加）
+    private void deleteSpecifiedFiles() {
+
+        if ( mSelectedFiles.size() <= 0 ) {
+            Toast.makeText( mContext, "file count is 0.", Toast.LENGTH_LONG ).show();
+            return;
+        }
+
+        for ( String selectedFile : mSelectedFiles ) {
+
+            String fileName = REC_FILE_PATH + "/" + selectedFile;
+            Log.d( LOG_TAG, "deleted file -> " + fileName );
+
+            File file = new File( fileName );
+            if ( file.exists() ) {
+                boolean result = file.delete();
+                if ( !result ) {
+                    Toast.makeText(mContext, "Delete File Error !! [" + fileName + "]", Toast.LENGTH_LONG).show();
+                }
+            } else {
+                Toast.makeText(mContext, "File doesn't exist. [" + fileName + "]", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+//複数ファイル選択を可能にする。（追加ここまで）
 
     private boolean isRecordServiceAlive() {
         //（確か）API 26から廃止
@@ -490,9 +563,32 @@ public class FragmentMain extends Fragment {
                         Toast.makeText( mContext, "getFragmentManager() returned null.", Toast.LENGTH_LONG  ).show();
                     }
                 } else {
-                    mSelectedView = null;
-                    mMenuType = MENU_TYPE_MAIN;
-                    ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
+//複数選択できるようにする。（コメント化）
+//                    mSelectedView = null;
+//                    mMenuType = MENU_TYPE_MAIN;
+//                    ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
+//複数選択できるようにする。（コメント化ここまで）
+
+//複数選択できるようにする（追加）
+                    //mSelectedView != null -> ファイル選択中：選択状態にする
+                    if ( mSelectedView != null ) {
+                        boolean findFlag = false;
+                        for ( String selectedFile : mSelectedFiles ) {
+                            if ( selectedFile.equals( item.getPhoneNumber() ) ) { //既にリストにあるものはArrayから除外し、バックグランド色も戻す。
+                                findFlag = true;
+                                break;
+                            }
+                        }
+                        if ( findFlag ) { //削除対象として選択されているので解除する。
+                            view.setBackgroundColor( Color.WHITE  );
+                            mSelectedFiles.remove( item.getPhoneNumber() );
+                        } else { //削除対象として追加する。
+                            view.setBackgroundColor( Color.GREEN  );
+                            mSelectedFiles.add( item.getPhoneNumber() );
+                        }
+                    }
+//複数選択できるようにする（追加ここまで）
+
                 }
             }
         });
@@ -501,15 +597,39 @@ public class FragmentMain extends Fragment {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                 //Log.d( LOG_TAG, "ListView longClick pos->" + position );
+//複数選択できるようにする。（コメント化）
+//                view.setSelected( !( view.isSelected() ) ); //true：バックグラウンド色が drawable/selector_list_item.xml で定義した色に変わる。
+//                if ( view.isSelected() ) {
+//                    mSelectedView = view;
+//                }
+//
+//                //メニュー切り替え（削除を表示）
+//                mMenuType = MENU_TYPE_FILE_DEL;
+//                ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
+//複数選択できるようにする。（コメント化ここまで）
 
-                view.setSelected( !( view.isSelected() ) ); //true：バックグラウンド色が drawable/selector_list_item.xml で定義した色に変わる。
-                if ( view.isSelected() ) {
+//複数選択できるようにする。（追加）
+
+                ItemData itemData = (ItemData) parent.getItemAtPosition( position );
+
+                if ( mSelectedView == null ) {
+
+                    view.setBackgroundColor( Color.GREEN );
                     mSelectedView = view;
+
+                    if ( mSelectedFiles != null ) {
+                        mSelectedFiles.clear();
+                    }
+                    mSelectedFiles = new ArrayList<String>();
+                    mSelectedFiles.add( itemData.getPhoneNumber() );
+
+                    //メニュー切り替え（削除を表示）
+                    mMenuType = MENU_TYPE_FILE_DEL;
+                    ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
+
                 }
 
-                //メニュー切り替え（削除を表示）
-                mMenuType = MENU_TYPE_FILE_DEL;
-                ( (AppCompatActivity)mContext ).invalidateOptionsMenu();
+//複数選択できるようにする。（追加ここまで）
 
                 return true; //onItemClick()には渡さない。長押しされた場合は選択中とする。
             }
