@@ -14,7 +14,7 @@ public enum EnumFormatList {
 
     /*private*/ EnumFormatList(String wav ) {
         this.type = wav;
-        Log.d( "test enum", "arg = "+wav );
+        //Log.d( "test enum", "arg = "+wav );
     }
 
     public String getValue() {
