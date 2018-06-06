@@ -195,6 +195,7 @@ public class FragmentMain extends Fragment {
                 if ( isChecked ) {
                     startTelRecService();
                 } else {
+                    resetReceiver();
                     stopTelRecService();
                 }
             }
