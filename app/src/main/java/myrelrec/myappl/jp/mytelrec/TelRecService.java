@@ -1,13 +1,11 @@
 package myrelrec.myappl.jp.mytelrec;
 
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.media.MediaRecorder;
+import android.media.AudioManager;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -15,13 +13,10 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
 import android.support.annotation.Nullable;
-import android.support.v4.content.LocalBroadcastManager;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
-import android.widget.Toast;
 
-import java.io.File;
 
 public class TelRecService extends Service {
 
@@ -30,7 +25,7 @@ public class TelRecService extends Service {
 
     private ServiceHandler mServiceHandler;
     private String mIntentFileType;
-
+    private Context mContext;
     private MyPhoneStateListener mMyListener = null;
 
     // Handler that receives messages from the thread
@@ -42,23 +37,18 @@ public class TelRecService extends Service {
         public void handleMessage( Message msg ) {
             Log.d( LOG_TAG, "Thread works !!" );
 
-            Context context = getApplicationContext();
-
-//            //通知を発行するmanager
-//            NotificationManager nManager = (NotificationManager) context.getSystemService( Context.NOTIFICATION_SERVICE );
-
             //通知エリアをタップされた時に起動するアプリを設定
             Intent notifyIntent = new Intent();
-            notifyIntent.setClass( context, MainActivity.class );
-            PendingIntent pendingIntent = PendingIntent.getActivity( context, 0, notifyIntent, 0 );
+            notifyIntent.setClass(  mContext, MainActivity.class );
+            PendingIntent pendingIntent = PendingIntent.getActivity( mContext, 0, notifyIntent, 0 );
 
             //通知内容設定 (android 4 より下をサポートするなら NotificationCompat)
-            Notification.Builder builder = new Notification.Builder( context );
+            Notification.Builder builder = new Notification.Builder( mContext );
             builder.setSmallIcon( R.mipmap.ic_launcher_round );
             builder.setContentTitle( "通話記録中" );
             builder.setContentText( "これは setContextText() です" );
             builder.setTicker( "setTicker() です。" );
-            builder.addAction( R.drawable.ic_settings_white_24dp, "OK(表示してみただけです。)", (PendingIntent)null ); //ContentTextの下にでる。OK/Cancelボタンなど何某かのAction(PendingIntentで指定するのだろう)につなげる。APIレベルで・・・。とりあえず出たので。
+            builder.addAction( R.drawable.ic_settings_white_24dp, "OK (表示してみただけです。)", pendingIntent ); //ContentTextの下にでる。OK/Cancelボタンなど何某かのAction(PendingIntentで指定するのだろう)につなげる。APIレベルで・・・。とりあえず出たので。
             builder.setContentIntent( pendingIntent );
 
             startForeground( 111, builder.build() ); // id=0はダメ！！
@@ -72,7 +62,8 @@ public class TelRecService extends Service {
 
         Log.d( LOG_TAG, "onCreate() started !" );
 
-//        super.onCreate();
+        //super.onCreate();
+        mContext = this;
 
         HandlerThread thread = new HandlerThread( "ServiceStartArguments", Process.PHONE_UID );
         thread.start();
@@ -87,7 +78,7 @@ public class TelRecService extends Service {
 
         Log.d( LOG_TAG, "onStartCommand() started !" );
 
-//        return super.onStartCommand(intent, flags, startId);
+        //return super.onStartCommand(intent, flags, startId);
 
         Message msg = mServiceHandler.obtainMessage();
         msg.arg1 = startId;
@@ -120,10 +111,10 @@ public class TelRecService extends Service {
     private void setMyListener() {
 
         //TelephonyManagerの生成
-        TelephonyManager telephonyManager = (TelephonyManager) this.getSystemService( Context.TELEPHONY_SERVICE );
+        TelephonyManager telephonyManager = (TelephonyManager) mContext.getSystemService( Context.TELEPHONY_SERVICE );
         //リスナーの登録
         if ( telephonyManager != null ) {
-             mMyListener = new MyPhoneStateListener( this, mIntentFileType );
+             mMyListener = new MyPhoneStateListener( mContext, mIntentFileType );
             telephonyManager.listen ( mMyListener, PhoneStateListener.LISTEN_CALL_STATE ); // Listen for changes to the device call state. //
             Log.d( LOG_TAG, "Telephony Listener set ! listener addr->"+mMyListener );
         } else {
@@ -134,7 +125,7 @@ public class TelRecService extends Service {
 
     private void resetMyListener() {
 
-        TelephonyManager telephonyManager = (TelephonyManager) this.getSystemService( Context.TELEPHONY_SERVICE );
+        TelephonyManager telephonyManager = (TelephonyManager) mContext.getSystemService( Context.TELEPHONY_SERVICE );
         //リスナーの登録 解除
         if ( telephonyManager != null ) {
             Log.d( LOG_TAG, "Telephony Listener cancel ! listener addr->"+mMyListener );
