@@ -116,9 +116,9 @@ public class MyPhoneStateListener extends PhoneStateListener {
         String extString = f.getValue();
 
         // YYYYMMDDhhmmss_tel.mp4 (locationが関係してくるなんて・・・)
-        fileName = String.format( Locale.US, "%04d%02d%02d_%02d%02d%02d_%s_%s.%s",
+        fileName = String.format( Locale.US, "%04d%02d%02d_%02d%02d%02d_%s%s.%s",
                 year, month, dayOfMonth, hourOfDay, minute, second,
-                mReceive?"r":"s", mReceive?mCallNumber:"", extString ); //着信の時は番号付加。発信の時は番号なし（とりあえず）。
+                mReceive?"r":"s", mReceive?"_"+mCallNumber:"", extString ); //着信の時は番号付加。発信の時は番号なし（とりあえず）。
         Log.d( LOG_TAG, "file name->"+fileName );
 
         return fileName;
