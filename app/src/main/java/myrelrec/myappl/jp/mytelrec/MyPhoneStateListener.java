@@ -21,6 +21,7 @@ public class MyPhoneStateListener extends PhoneStateListener {
     private MediaRecorder mMediaRecorder = null;
     private Context mContext;
     private String mFileType;
+    private String mCallNumber = "";
 
     public MyPhoneStateListener( Context context, String fileType ) {
         mContext = context;
@@ -30,6 +31,7 @@ public class MyPhoneStateListener extends PhoneStateListener {
 
     @Override
     public void onCallStateChanged(int state, String callNumber ) {
+        //callNumberは着信番号みたい。発信はパーミッション PROCESS_OUTGOING_CALLS　が必要。(発信先番号とかは「発信の監視」になってしまうもんね。悪意があれば・・・)
 
         super.onCallStateChanged( state, callNumber );
 
@@ -64,12 +66,14 @@ public class MyPhoneStateListener extends PhoneStateListener {
                     }
                     mRecNow = false;
                     mReceive = false;
+                    mCallNumber = "";
                 }
                 break;
 
             case TelephonyManager.CALL_STATE_RINGING: //着信
 //                Toast.makeText( mContext, "着信："+callNumber, Toast.LENGTH_LONG ).show();
                 Log.d( LOG_TAG, "着信："+callNumber );
+                mCallNumber = callNumber;
                 mRecNow = false; //着信があるという事は通話中ではないと断定してしまう。キャッチホンとかあるのかな・・・。留守電モードとか・・・。
                 mReceive = true;
                 break;
@@ -112,8 +116,9 @@ public class MyPhoneStateListener extends PhoneStateListener {
         String extString = f.getValue();
 
         // YYYYMMDDhhmmss_tel.mp4 (locationが関係してくるなんて・・・)
-        fileName = String.format( Locale.US, "%04d%02d%02d_%02d%02d%02d_%s.%s",
-                year, month, dayOfMonth, hourOfDay, minute, second, mReceive?"r":"s", extString );
+        fileName = String.format( Locale.US, "%04d%02d%02d_%02d%02d%02d_%s_%s.%s",
+                year, month, dayOfMonth, hourOfDay, minute, second,
+                mReceive?"r":"s", mReceive?mCallNumber:"", extString ); //着信の時は番号付加。発信の時は番号なし（とりあえず）。
         Log.d( LOG_TAG, "file name->"+fileName );
 
         return fileName;
