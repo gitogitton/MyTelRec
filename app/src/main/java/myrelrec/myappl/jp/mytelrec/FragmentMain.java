@@ -614,21 +614,25 @@ public class FragmentMain extends Fragment {
         // If the service is being started or is already running, the ComponentName of the actual service that was started is returned;
         // else if the service does not exist null is returned. (wrote by google site)
         //
-        Intent intent = new Intent( mContext, TelRecService.class );
-        mIntentFileType = mSettingData.getFormat();
-        intent.putExtra( KEY_FILE_TYPE, mIntentFileType);
-        ComponentName componentName = mContext.startService( intent );
-        if ( componentName == null ) {
-            //Log.d( LOG_TAG, "Service doesn't exist." );
-            Toast.makeText( mContext, "Service doesn't exist.", Toast.LENGTH_LONG ).show();
-            return;
+        if ( ! isRecordServiceAlive() ) {
+            Intent intent = new Intent( mContext, TelRecService.class );
+            mIntentFileType = mSettingData.getFormat();
+            intent.putExtra( KEY_FILE_TYPE, mIntentFileType);
+            ComponentName componentName = mContext.startService( intent );
+            if ( componentName == null ) {
+                //Log.d( LOG_TAG, "Service doesn't exist." );
+                Toast.makeText( mContext, "Service doesn't exist.", Toast.LENGTH_LONG ).show();
+                return;
 //        } else {
 //            Log.d( LOG_TAG, "componentName.getClassName()->"+componentName.getClassName() );
 //            Log.d( LOG_TAG, "componentName.toString()->"+componentName.toString() );
-        }
+            }
 
-        Toast.makeText( mContext, "Service is started.", Toast.LENGTH_LONG ).show();
-        //Log.d( LOG_TAG, "Service is started." );
+            Toast.makeText( mContext, "Service is started.", Toast.LENGTH_LONG ).show();
+            //Log.d( LOG_TAG, "Service is started." );
+        } else {
+            Toast.makeText( mContext, "Service is already started.", Toast.LENGTH_LONG ).show();
+        }
     }
 
     private void stopTelRecService() {
@@ -636,20 +640,24 @@ public class FragmentMain extends Fragment {
         //
         //サービス終了処理
         //
-        Intent intent = new Intent( mContext, TelRecService.class );
-        intent.putExtra(KEY_FILE_TYPE, mIntentFileType);
-        // If there is a service matching the given Intent that is already running,
-        // then it is stopped and true is returned;
-        // else false is returned.  (wrote by google site)
-        boolean result = mContext.stopService( intent );
-        if ( !result ) {
-            Toast.makeText( mContext, "Service is not found.", Toast.LENGTH_LONG ).show();
-            //Log.d( LOG_TAG, "Service is not found." );
-            return;
-        }
+        if ( isRecordServiceAlive() ) {
+            Intent intent = new Intent( mContext, TelRecService.class );
+            intent.putExtra(KEY_FILE_TYPE, mIntentFileType);
+            // If there is a service matching the given Intent that is already running,
+            // then it is stopped and true is returned;
+            // else false is returned.  (wrote by google site)
+            boolean result = mContext.stopService( intent );
+            if ( !result ) {
+                Toast.makeText( mContext, "Service is not found.", Toast.LENGTH_LONG ).show();
+                //Log.d( LOG_TAG, "Service is not found." );
+                return;
+            }
 
-        Toast.makeText( mContext, "Service is stopped.", Toast.LENGTH_LONG ).show();
-        //Log.d( LOG_TAG, "Service is stopped." );
+            Toast.makeText( mContext, "Service is stopped.", Toast.LENGTH_LONG ).show();
+            //Log.d( LOG_TAG, "Service is stopped." );
+        } else {
+            Toast.makeText( mContext, "Service is already stopped.", Toast.LENGTH_LONG ).show();
+        }
     }
 
     private void showRecordingFileList() {
