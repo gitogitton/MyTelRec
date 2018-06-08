@@ -6,7 +6,12 @@
     <string name="menu_setting">設定</string>
     <string name="menu_endApp">アプリ終了</string>
     <string name="menu_recording">録音有効無効</string>
+    <string name="menu_file_del">ファイル削除</string>
+    <string name="menu_cancel_fileDel">中止</string>
+    <string name="menu_use_address_book">名前で表示</string>
+    <string name="menu_not_use_address_book">ファイル名で表示</string>
     <string name="image_description">設定</string>
+    <string name="no_items_found">No items found</string>
 
     <!--設定項目-->
     <string name="file_format">録音するファイル形式</string>
@@ -22,7 +27,4 @@
 
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="menu_end_without_save">保存せずに戻る</string>
-    <string name="menu_file_del">ファイル削除</string>
-    <string name="menu_cancel_fileDel">中止</string>
-    <string name="no_items_found">No items found</string>
 </resources>

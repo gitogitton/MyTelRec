@@ -5,10 +5,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -66,7 +68,7 @@ public class FragmentMain extends Fragment {
     private ArrayList<String> mSelectedFiles = null;
 //複数ファイル選択を可能にする（追加ここまで）
     private int mMenuType = MENU_TYPE_MAIN;
-
+    private boolean mUseAddressBook = false;
     private MyBroadcastReceiver mMyReceiver = null;
 
     public FragmentMain() {
@@ -216,18 +218,31 @@ public class FragmentMain extends Fragment {
                 menu.findItem( R.id.menu_setting ).setVisible( true );
                 menu.findItem( R.id.menu_file_delete ).setVisible( false );
                 menu.findItem( R.id.menu_cancel ).setVisible( false );
+                menu.findItem( R.id.menu_user_addressBook ).setVisible( true );
+                if (mUseAddressBook) {
+                    menu.findItem( R.id.menu_user_addressBook ).setTitle( getString( R.string.menu_not_use_address_book ) );
+                } else {
+                    menu.findItem( R.id.menu_user_addressBook ).setTitle( getString( R.string.menu_use_address_book ) );
+                }
                 break;
             case MENU_TYPE_FILE_DEL : //ListViewでファイルを選択中
                 menu.findItem( R.id.menu_activate ).setVisible( false );
                 menu.findItem( R.id.menu_setting ).setVisible( false );
                 menu.findItem( R.id.menu_file_delete ).setVisible( true );
                 menu.findItem( R.id.menu_cancel ).setVisible( true );
+                menu.findItem( R.id.menu_user_addressBook ).setVisible( false );
                 break;
             default :
                 menu.findItem( R.id.menu_activate ).setVisible( true );
                 menu.findItem( R.id.menu_setting ).setVisible( true );
                 menu.findItem( R.id.menu_file_delete ).setVisible( false );
                 menu.findItem( R.id.menu_cancel ).setVisible( false );
+                menu.findItem( R.id.menu_user_addressBook ).setVisible( true );
+                if (mUseAddressBook) {
+                    menu.findItem( R.id.menu_user_addressBook ).setTitle( getString( R.string.menu_not_use_address_book ) );
+                } else {
+                    menu.findItem( R.id.menu_user_addressBook ).setTitle( getString( R.string.menu_use_address_book ) );
+                }
                 break;
         }
     }
@@ -270,10 +285,20 @@ public class FragmentMain extends Fragment {
                     refreshListAll();
                     mSelectedView = null;
                     mSelectedFiles.clear();
-                    Log.d( LOG_TAG, "selected file (after clear)->"+mSelectedFiles );
+                    //Log.d( LOG_TAG, "selected file (after clear)->"+mSelectedFiles );
                 }
 //複数ファイルの選択を可能にする（追加ここまで）
 
+                break;
+            case R.id.menu_user_addressBook :
+                mUseAddressBook = !mUseAddressBook;
+                if (mUseAddressBook) {
+                    //Log.d( LOG_TAG, "redrawListWithAddrBook()" );
+                    redrawListWithAddrBook();
+                } else {
+                    //Log.d( LOG_TAG, "refreshListAll()" );
+                    refreshListAll();
+                }
                 break;
             default:
                 break;
@@ -323,6 +348,100 @@ public class FragmentMain extends Fragment {
     //
     //private methods
     //
+    private void redrawListWithAddrBook() {
+        //
+        //電話番号がわかっているものについて電話帳から名前を取得し、リストを再描画する。
+        //
+
+        ArrayList<ItemData> arrayList = new ArrayList<ItemData>();
+        Cursor cursor = mContext.getContentResolver().query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                null, null, null, null );
+        if ( cursor != null ) {
+            String phoneNumber;
+            while( cursor.moveToNext() ) {
+                phoneNumber = cursor.getString( cursor.getColumnIndex( ContactsContract.CommonDataKinds.Phone.DATA1 ) );
+                phoneNumber = phoneNumber.replace( "-", "" );
+                ItemData itemData = new ItemData();
+                itemData.setPhoneNumber( phoneNumber );
+                itemData.setName( cursor.getString( cursor.getColumnIndex( ContactsContract.PhoneLookup.DISPLAY_NAME ) ) );
+                arrayList.add( itemData );
+            }
+
+            cursor.close();
+
+            //
+            //比較
+            //今は着信しか電話番号を取ってないので着信のみ対象とする。
+            //
+            //ListViewからデータ取得
+            ListView listView = mView.findViewById( R.id.list_recordFileList );
+            RecordingFileListAdapter adapter = (RecordingFileListAdapter) listView.getAdapter();
+            int listCount = adapter.getCount();
+            if ( listCount <= 0 ) {
+                Log.d( LOG_TAG, "ListView : no data ["+listCount+"]" );
+                return;
+            }
+            //Log.d( LOG_TAG, "ListView : List Count-> "+listCount );
+
+            for ( int i=0; i<listCount; i++ ) {
+                ItemData item = adapter.getItem( i );
+                //Log.d( LOG_TAG, "item.getPhoneNumber()->"+item.getPhoneNumber() );
+                //電話番号抽出
+                if ( item == null ) { continue; }
+                int startPos  = item.getPhoneNumber().lastIndexOf( "_" ) + 1;
+                int lastPos = item.getPhoneNumber().lastIndexOf( "." );
+                //Log.d( LOG_TAG, "startPos - lastPos -> "+startPos+" - "+lastPos );
+                if ( startPos < 0 || lastPos < 0 || startPos >= lastPos ) { continue; }
+
+                String itemPhoneNumber = item.getPhoneNumber().substring( startPos, lastPos );
+                //Log.d( LOG_TAG, "itemPhoneNumber->"+itemPhoneNumber );
+
+                for ( int j=0; j<arrayList.size(); j++ ) {
+                    //電話番後が同じ場合
+                    //Log.d( LOG_TAG, "arrayList.getPhoneNumber()->"+arrayList.get( j ).getPhoneNumber() );
+                    if ( itemPhoneNumber.equals( arrayList.get( j ).getPhoneNumber() ) ) {
+                        item.setName( arrayList.get( j ).getName() );
+                        item.setDisplayString( arrayList.get( j ).getName() );
+                        //Log.d( LOG_TAG, "set name : "+arrayList.get( j ).getName()+" (Number:"+itemPhoneNumber+")" );
+                        break;
+                    }
+                }
+                adapter.notifyDataSetChanged();
+            }
+
+
+
+//確認作業(ここから)
+//            Log.d( LOG_TAG, "cursor->"+ cursor );
+//            Log.d( LOG_TAG, "cursor.getCount()->"+cursor.getCount() );
+//            cursor.moveToFirst();
+//            String[] columnNames = cursor.getColumnNames();
+//            Log.d( LOG_TAG, "columnNames.length->"+columnNames.length );
+//
+//            for ( int i=0; i<columnNames.length; i++ ) {
+//                Log.d( LOG_TAG, "columnName->"+columnNames[i] );
+//            }
+//
+//            Log.d( LOG_TAG, "==============================" );
+//            Log.d( LOG_TAG, "display_name->"+ cursor.getString( cursor.getColumnIndex( ContactsContract.PhoneLookup.DISPLAY_NAME ) ) );
+//            Log.d( LOG_TAG, "contact_id->"+ cursor.getString( cursor.getColumnIndex( "contact_id" ) ) );
+//            Log.d( LOG_TAG, "has_phone_number->"+ cursor.getString( cursor.getColumnIndex( ContactsContract.PhoneLookup.HAS_PHONE_NUMBER ) ) );
+//            Log.d( LOG_TAG, "PHONETIC_NAME->"+ cursor.getString( cursor.getColumnIndex( ContactsContract.PhoneLookup.PHONETIC_NAME ) ) );
+//            Log.d( LOG_TAG, "_id->"+ cursor.getString( cursor.getColumnIndex( ContactsContract.PhoneLookup._ID ) ) );
+//
+//            //ContactsContract.PhoneLookup でアクセスしても電話番号にアクセス出来ないので ContactsContract.CommonDataKinds.Phone でアクセスする。
+//            //電話番号は複数登録出来る。～.Phone.DATA で複数取れる（？やってないので「？」）。とりあえず1件だけで「～.Phone.DATA1」としている。
+//            //ちなみに、E-mailも複数登録出来る。ContactsContract.CommonDataKinds.Email というものがある。ここからアクセスするのだろう。
+//            //更にPhoneとMailを合わせて ContactsContract.CommonDataKinds.Contactables なるものがあるようだ。
+//            Log.d( LOG_TAG, "data1->"+ cursor.getString( cursor.getColumnIndex( ContactsContract.CommonDataKinds.Phone.DATA1 ) ) );
+//
+//            cursor.close();
+//確認作業(ここまで)
+
+        } //if ( cursor!=null)
+    }
+
     private void setReceiver() {
         IntentFilter intentFilter = new IntentFilter( AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED );  //Broadcast intent action indicating that the call state on the device has changed.
         mMyReceiver = new MyBroadcastReceiver();
@@ -457,7 +576,7 @@ public class FragmentMain extends Fragment {
         for ( String selectedFile : mSelectedFiles ) {
 
             String fileName = REC_FILE_PATH + "/" + selectedFile;
-            Log.d( LOG_TAG, "deleted file -> " + fileName );
+            //Log.d( LOG_TAG, "deleted file -> " + fileName );
 
             File file = new File( fileName );
             if ( file.exists() ) {
@@ -495,21 +614,25 @@ public class FragmentMain extends Fragment {
         // If the service is being started or is already running, the ComponentName of the actual service that was started is returned;
         // else if the service does not exist null is returned. (wrote by google site)
         //
-        Intent intent = new Intent( mContext, TelRecService.class );
-        mIntentFileType = mSettingData.getFormat();
-        intent.putExtra( KEY_FILE_TYPE, mIntentFileType);
-        ComponentName componentName = mContext.startService( intent );
-        if ( componentName == null ) {
-            //Log.d( LOG_TAG, "Service doesn't exist." );
-            Toast.makeText( mContext, "Service doesn't exist.", Toast.LENGTH_LONG ).show();
-            return;
+        if ( ! isRecordServiceAlive() ) {
+            Intent intent = new Intent( mContext, TelRecService.class );
+            mIntentFileType = mSettingData.getFormat();
+            intent.putExtra( KEY_FILE_TYPE, mIntentFileType);
+            ComponentName componentName = mContext.startService( intent );
+            if ( componentName == null ) {
+                //Log.d( LOG_TAG, "Service doesn't exist." );
+                Toast.makeText( mContext, "Service doesn't exist.", Toast.LENGTH_LONG ).show();
+                return;
 //        } else {
 //            Log.d( LOG_TAG, "componentName.getClassName()->"+componentName.getClassName() );
 //            Log.d( LOG_TAG, "componentName.toString()->"+componentName.toString() );
-        }
+            }
 
-        Toast.makeText( mContext, "Service is started.", Toast.LENGTH_LONG ).show();
-        //Log.d( LOG_TAG, "Service is started." );
+            Toast.makeText( mContext, "Service is started.", Toast.LENGTH_LONG ).show();
+            //Log.d( LOG_TAG, "Service is started." );
+        } else {
+            Toast.makeText( mContext, "Service is already started.", Toast.LENGTH_LONG ).show();
+        }
     }
 
     private void stopTelRecService() {
@@ -517,20 +640,24 @@ public class FragmentMain extends Fragment {
         //
         //サービス終了処理
         //
-        Intent intent = new Intent( mContext, TelRecService.class );
-        intent.putExtra(KEY_FILE_TYPE, mIntentFileType);
-        // If there is a service matching the given Intent that is already running,
-        // then it is stopped and true is returned;
-        // else false is returned.  (wrote by google site)
-        boolean result = mContext.stopService( intent );
-        if ( !result ) {
-            Toast.makeText( mContext, "Service is not found.", Toast.LENGTH_LONG ).show();
-            //Log.d( LOG_TAG, "Service is not found." );
-            return;
-        }
+        if ( isRecordServiceAlive() ) {
+            Intent intent = new Intent( mContext, TelRecService.class );
+            intent.putExtra(KEY_FILE_TYPE, mIntentFileType);
+            // If there is a service matching the given Intent that is already running,
+            // then it is stopped and true is returned;
+            // else false is returned.  (wrote by google site)
+            boolean result = mContext.stopService( intent );
+            if ( !result ) {
+                Toast.makeText( mContext, "Service is not found.", Toast.LENGTH_LONG ).show();
+                //Log.d( LOG_TAG, "Service is not found." );
+                return;
+            }
 
-        Toast.makeText( mContext, "Service is stopped.", Toast.LENGTH_LONG ).show();
-        //Log.d( LOG_TAG, "Service is stopped." );
+            Toast.makeText( mContext, "Service is stopped.", Toast.LENGTH_LONG ).show();
+            //Log.d( LOG_TAG, "Service is stopped." );
+        } else {
+            Toast.makeText( mContext, "Service is already stopped.", Toast.LENGTH_LONG ).show();
+        }
     }
 
     private void showRecordingFileList() {
@@ -666,8 +793,18 @@ public class FragmentMain extends Fragment {
 
             ItemData itemData = new ItemData();
             itemData.setDate( "" );
-            itemData.setPhoneNumber( item );
-
+            itemData.setPhoneNumber( item ); //setPhoneNumber()といいつつ、実はPhoneNumberを含むファイル名文字列なんです。(発信では番号取ってないので・・)
+            itemData.setName( "" ); //アドレス帳での登録名（このアプリではここまでしない！！）アドレス帳参照は「名前で表示」メニューで実装している。
+            if ( mUseAddressBook == true ) {
+                //ListViewに表示するデータにアドレス帳での登録名を使用する。（itemData.getName()）
+                //でも今はしない。不便を感じてから考える。アドレス帳参照は「名前で表示」メニューで実装している。（着信だけ）
+                //itemData.setDisplayString( itemData.getName() )
+                itemData.setDisplayString( item );
+            } else {
+                //ListViewに表示するデータにアドレス帳を使用しない。
+                //（ファイル名をそのまま使用）
+                itemData.setDisplayString( item );
+            }
             arrayList.add( itemData );
 
             prevDate = date;

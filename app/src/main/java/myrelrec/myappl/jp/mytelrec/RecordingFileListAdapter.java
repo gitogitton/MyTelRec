@@ -65,7 +65,7 @@ public class RecordingFileListAdapter extends ArrayAdapter<ItemData> {
             viewHolder.textDate.setVisibility( View.GONE );
             viewHolder.textPhoneNumber.setVisibility( View.VISIBLE );
             if ( itemData != null ) {
-                viewHolder.textPhoneNumber.setText( itemData.getPhoneNumber() );
+                viewHolder.textPhoneNumber.setText( itemData.getDisplayString() );
             }
         } else {
             viewHolder.textDate.setVisibility( View.VISIBLE );
