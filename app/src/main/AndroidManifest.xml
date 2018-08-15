@@ -19,6 +19,14 @@
     <!--Bluetoothの状態取得-->
     <uses-permission android:name="android.permission.BLUETOOTH" />
 
+    <!--
+    label : applicationタグで指定するものは、アプリ全体のラベル
+            activityタグで指定するものは、activityのラベル
+    icon :  applicationで指定するものは？？？
+            activityで指定するものは？？？
+            追加コメントしたのは、LUCE（android4.4）で開発していると出ていたアイコンが MOTO G5S PLUS（android7.1）に機種変更すると出なくなった。
+            applicationタグでアイコンを指定しても出なくなって、activityタグで指定すると出た。いい加減にしてほしい。
+    -->
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_telrec"
@@ -31,6 +39,8 @@
 
         <activity
             android:name=".MainActivity"
+            android:label="@string/app_name"
+            android:icon="@drawable/ic_telrec"
             android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
