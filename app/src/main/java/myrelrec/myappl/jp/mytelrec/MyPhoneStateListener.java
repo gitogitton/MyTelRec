@@ -69,10 +69,6 @@ public class MyPhoneStateListener extends PhoneStateListener {
                     mCallNumber = "";
                 }
 
-                //test (s)
-                startRecording();
-                //test (e)
-
                 break;
 
             case TelephonyManager.CALL_STATE_RINGING: //着信
