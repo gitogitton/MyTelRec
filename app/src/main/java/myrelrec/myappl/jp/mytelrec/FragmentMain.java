@@ -1,22 +1,29 @@
 package myrelrec.myappl.jp.mytelrec;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.content.PermissionChecker;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
@@ -41,14 +48,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
+import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+
 public class FragmentMain extends Fragment {
 
     private final String LOG_TAG = getClass().getSimpleName();
     private final String SETTING_FILE_NAME = "setting.csv"; //format : [file format],[auto start],[use bluetooth]
     private final String KEY_FILE_TYPE = "key_fileType";
-    private final String REC_FILE_PATH = "/storage/sdcard0/telrec";      //録音ファイルの保存先
+    private final String REC_FILE_PATH = "/sdcard/Audio/telrec";      //録音ファイルの保存先
     private final int   MENU_TYPE_MAIN = 1;
     private final int   MENU_TYPE_FILE_DEL = 2;
+    private final int   MY_PERMISSIONS_REQUEST = 1;
 
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -103,6 +113,15 @@ public class FragmentMain extends Fragment {
 
         setActionBar();
         setHasOptionsMenu( true );
+
+        //機種変更に伴う処理追加（android4.4からandroid7.1.1へ変わった）
+        //パーミッションチェックを追加（api23から変わったらしい）
+        if ( Build.VERSION.SDK_INT >= 23 ) {
+            checkPermissions();
+        }
+        else {
+
+        }
 
         return mView;
     }
@@ -345,9 +364,115 @@ public class FragmentMain extends Fragment {
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        Log.d( LOG_TAG, "requestCode="+requestCode );
+        int len = permissions.length;
+        for ( int i=0; i<len; i++ ) {
+            Log.d( LOG_TAG, "permissions["+i+"]="+permissions[i]+" / grantResults["+i+"]="+grantResults[i] );
+        }
+        if ( requestCode == MY_PERMISSIONS_REQUEST ) {
+            if ( ( grantResults.length >= 7 ) &&
+                    ( grantResults[0] == PermissionChecker.PERMISSION_GRANTED &&
+                            grantResults[1] == PermissionChecker.PERMISSION_GRANTED &&
+                            grantResults[2] == PermissionChecker.PERMISSION_GRANTED &&
+                            grantResults[3] == PermissionChecker.PERMISSION_GRANTED &&
+                            grantResults[4] == PermissionChecker.PERMISSION_GRANTED &&
+                            grantResults[5] == PermissionChecker.PERMISSION_GRANTED &&
+                            grantResults[6] == PermissionChecker.PERMISSION_GRANTED ) ) {
+                Toast.makeText(mContext, "get All permission !", Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(mContext, "could not get some permission !", Toast.LENGTH_LONG).show();
+            }
+        } else {
+            Toast.makeText(mContext, "Un-defined Request Code !", Toast.LENGTH_LONG).show();
+        }
+    }
+
+
+
     //
     //private methods
     //
+    private void checkPermissions() {
+
+        //Apiバージョン２３以上なら！！
+        if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ) {
+
+            int permissionRead = ContextCompat.checkSelfPermission( getActivity(), Manifest.permission.READ_EXTERNAL_STORAGE );
+            int permissionWrite = ContextCompat.checkSelfPermission( getActivity(), Manifest.permission.READ_EXTERNAL_STORAGE );
+            int permissionRecordAudio = ContextCompat.checkSelfPermission( getActivity(), Manifest.permission.RECORD_AUDIO );
+            int permissionReadPhoneState = ContextCompat.checkSelfPermission( getActivity(), Manifest.permission.READ_PHONE_STATE );
+            int permissionReadContact = ContextCompat.checkSelfPermission( getActivity(), Manifest.permission.READ_CONTACTS );
+            int permissionModifyAudioSetting = ContextCompat.checkSelfPermission( getActivity(), Manifest.permission.MODIFY_AUDIO_SETTINGS );
+            int permissionBluetooth = ContextCompat.checkSelfPermission( getActivity(), Manifest.permission.BLUETOOTH );
+
+            if ( permissionRead == PERMISSION_GRANTED && permissionWrite == PERMISSION_GRANTED &&
+                    permissionRecordAudio == PERMISSION_GRANTED && permissionReadPhoneState == PERMISSION_GRANTED &&
+                    permissionReadContact == PERMISSION_GRANTED && permissionModifyAudioSetting == PERMISSION_GRANTED &&
+                    permissionBluetooth == PERMISSION_GRANTED ) {
+//                showListOfDirectory( INIT_DIR );
+            }
+            else {
+                reqPermissions();
+//                Toast.makeText( getApplicationContext(), "パーミッションエラー", Toast.LENGTH_LONG ).show();
+            }
+        }
+    }
+
+    private void reqPermissions() {
+        boolean should = ActivityCompat.shouldShowRequestPermissionRationale(  getActivity(),
+                Manifest.permission.READ_EXTERNAL_STORAGE  );
+        // パーミッションが必要である理由をユーザに説明すべきときはこちら！！
+        if ( should ) {
+
+            // Show an expanation to the user *asynchronously* -- don't block
+            // this thread waiting for the user's response! After the user
+            // sees the explanation, try again to request the permission.
+
+            //説明のためのUIを自分で実装しなきゃならない！！
+            Log.d( LOG_TAG, "shouldShowRequestPermissionRationale() == true" );
+
+// 権限チェックした結果、持っていない場合はダイアログを出す
+            new AlertDialog.Builder(getContext())
+                    .setTitle("パーミッションの追加理由")
+                    .setMessage("このアプリでは次に続く複数の権限が必要になります。")
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            requestPermissions(
+                                    new String[]{ Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                            Manifest.permission.READ_EXTERNAL_STORAGE,
+                                            Manifest.permission.RECORD_AUDIO,
+                                            Manifest.permission.READ_PHONE_STATE,
+                                            Manifest.permission.READ_CONTACTS,
+                                            Manifest.permission.MODIFY_AUDIO_SETTINGS,
+                                            Manifest.permission.BLUETOOTH },
+                                    MY_PERMISSIONS_REQUEST );
+                        }
+                    })
+                    .create()
+                    .show();
+
+        } else {    //ユーザに説明が必要ない場合はこちら
+
+            requestPermissions(
+                    new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                            Manifest.permission.READ_EXTERNAL_STORAGE,
+                            Manifest.permission.RECORD_AUDIO,
+                            Manifest.permission.READ_PHONE_STATE,
+                            Manifest.permission.READ_CONTACTS,
+                            Manifest.permission.MODIFY_AUDIO_SETTINGS,
+                            Manifest.permission.BLUETOOTH  },
+                    MY_PERMISSIONS_REQUEST);
+
+            // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+            // app-defined int constant. The callback method gets the
+            // result of the request.
+        }
+    }
+
     private void redrawListWithAddrBook() {
         //
         //電話番号がわかっているものについて電話帳から名前を取得し、リストを再描画する。

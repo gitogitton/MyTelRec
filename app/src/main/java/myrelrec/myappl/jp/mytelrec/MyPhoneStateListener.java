@@ -15,7 +15,7 @@ import java.util.Locale;
 public class MyPhoneStateListener extends PhoneStateListener {
 
     private final String LOG_TAG = getClass().getSimpleName();
-    private final String recFilePath = "/storage/sdcard0/telrec";      //録音ファイルの保存先
+    private final String recFilePath = "/sdcard/Audio/telrec";      //録音ファイルの保存先
     private boolean mRecNow = false; //録音中はtrue
     private boolean mReceive = false; //着信の場合にtrue
     private MediaRecorder mMediaRecorder = null;
@@ -68,6 +68,11 @@ public class MyPhoneStateListener extends PhoneStateListener {
                     mReceive = false;
                     mCallNumber = "";
                 }
+
+                //test (s)
+                startRecording();
+                //test (e)
+
                 break;
 
             case TelephonyManager.CALL_STATE_RINGING: //着信
