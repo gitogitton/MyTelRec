@@ -12,7 +12,7 @@ import java.io.File;
 import java.util.Calendar;
 import java.util.Locale;
 
-public class MyPhoneStateListener extends PhoneStateListener {
+public class MyPhoneStateListener extends PhoneStateListener implements MediaRecorder.OnInfoListener, MediaRecorder.OnErrorListener {
 
     private final String LOG_TAG = getClass().getSimpleName();
     private final String recFilePath = "/sdcard/Audio/telrec";      //録音ファイルの保存先
@@ -68,7 +68,6 @@ public class MyPhoneStateListener extends PhoneStateListener {
                     mReceive = false;
                     mCallNumber = "";
                 }
-
                 break;
 
             case TelephonyManager.CALL_STATE_RINGING: //着信
@@ -133,7 +132,7 @@ public class MyPhoneStateListener extends PhoneStateListener {
         Log.d( LOG_TAG, "full path ->"+filePath );
 
         Log.d( LOG_TAG, "mRecNow == false" );
-        try{
+
             File mediaFile = new File( filePath );
             if( mediaFile.exists() ) {
                 //ファイルが存在する場合は削除する
@@ -153,11 +152,13 @@ public class MyPhoneStateListener extends PhoneStateListener {
                     mMediaRecorder.setAudioSource( MediaRecorder.AudioSource.VOICE_COMMUNICATION );
                 } else {
                     Log.d( LOG_TAG, "SCO mode is OFF" );
-                    mMediaRecorder.setAudioSource( MediaRecorder.AudioSource.VOICE_CALL ); //電話の受話送話両方、、だと思う。
+//                    mMediaRecorder.setAudioSource( MediaRecorder.AudioSource.VOICE_CALL ); //電話の受話送話両方、、だと思う。
+                    mMediaRecorder.setAudioSource( MediaRecorder.AudioSource.VOICE_COMMUNICATION ); //moto g5s plus ではこちらでないと mediarecorder.start() で異常が発生する・・・。しかし、キチンと通話を録音できるのか？
                 }
             } else {
                 Log.d( LOG_TAG, "AudioManager is null." );
-                mMediaRecorder.setAudioSource( MediaRecorder.AudioSource.VOICE_CALL ); //電話の受話送話両方、、だと思う。
+//                mMediaRecorder.setAudioSource( MediaRecorder.AudioSource.VOICE_CALL ); //電話の受話送話両方、、だと思う。
+                mMediaRecorder.setAudioSource( MediaRecorder.AudioSource.VOICE_COMMUNICATION ); // //moto g5s plus ではこちらでないと mediarecorder.start() で異常が発生する・・・。しかし、キチンと通話を録音できるのか？
             }
 
             //
@@ -181,15 +182,31 @@ public class MyPhoneStateListener extends PhoneStateListener {
 
             //ファイルの保存先を指定
             mMediaRecorder.setOutputFile( filePath );
+
+        try{
             //録音の準備をする
             mMediaRecorder.prepare();
             //録音開始
             mMediaRecorder.start();
-
             Log.d( LOG_TAG, "recorder start !" );
-
         } catch(Exception e){
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void onInfo(MediaRecorder mr, int what, int extra) {
+        Log.d( LOG_TAG, "onInfo() start. what="+what+" / extra="+extra  );
+
+        //入ってこないのです・・・・・( 一一)
+        //mediarecorder.start() で失敗する理由がわからない・・・・
+    }
+
+    @Override
+    public void onError(MediaRecorder mr, int what, int extra) {
+        Log.d( LOG_TAG, "onError() start. what="+what+" / extra="+extra  );
+
+        //ここにも入ってこないのです・・・・・( 一一)
+        //mediarecorder.start() で失敗する理由がわからない・・・・
     }
 }
