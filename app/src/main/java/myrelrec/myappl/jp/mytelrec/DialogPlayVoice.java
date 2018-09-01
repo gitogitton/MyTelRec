@@ -25,7 +25,7 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
 
     private final String LOG_TAG = getClass().getSimpleName();
     private final String mDialogTitle = "音声を再生";
-    private final String mFilePath = "/storage/sdcard0/telrec/";
+    private final String mFilePath = "/sdcard/Audio/telrec/";
     private String mMessage = "";
     private View mView;
     private Context mContext;
