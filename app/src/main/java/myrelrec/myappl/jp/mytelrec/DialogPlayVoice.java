@@ -19,13 +19,11 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.Objects;
-
 public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErrorListener {
 
     private final String LOG_TAG = getClass().getSimpleName();
     private final String mDialogTitle = "音声を再生";
-    private final String mFilePath = "/sdcard/Audio/telrec/";
+    private final String mFilePath = SettingData.sRecordingFilePath;
     private String mMessage = "";
     private View mView;
     private Context mContext;

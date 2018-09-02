@@ -65,7 +65,7 @@ public class TelRecIntentService extends IntentService {
 
         //録音
         MediaRecorder mediarecorder; //録音用のメディアレコーダークラス
-        final String filePath = "/storage/sdcard0/telrec/sample.mp4"; //録音用のファイルパス
+        final String filePath = SettingData.sRecordingFilePath +"/sample.mp4"; //録音用のファイルパス
 
         try{
             File mediafile = new File(filePath);

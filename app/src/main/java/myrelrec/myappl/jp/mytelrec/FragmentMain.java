@@ -55,7 +55,7 @@ public class FragmentMain extends Fragment {
     private final String LOG_TAG = getClass().getSimpleName();
     private final String SETTING_FILE_NAME = "setting.csv"; //format : [file format],[auto start],[use bluetooth]
     private final String KEY_FILE_TYPE = "key_fileType";
-    private final String REC_FILE_PATH = "/sdcard/Audio/telrec";      //録音ファイルの保存先
+    private final String REC_FILE_PATH = SettingData.sRecordingFilePath;      //録音ファイルの保存先
     private final int   MENU_TYPE_MAIN = 1;
     private final int   MENU_TYPE_FILE_DEL = 2;
     private final int   MY_PERMISSIONS_REQUEST = 1;
@@ -118,10 +118,11 @@ public class FragmentMain extends Fragment {
         //パーミッションチェックを追加（api23から変わったらしい）
         if ( Build.VERSION.SDK_INT >= 23 ) {
             checkPermissions();
-        }
-        else {
+        } else {
 
         }
+
+        Log.d( LOG_TAG, "path->"+REC_FILE_PATH );
 
         return mView;
     }

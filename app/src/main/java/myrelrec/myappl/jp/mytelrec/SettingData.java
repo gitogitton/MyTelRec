@@ -8,6 +8,8 @@ public class SettingData implements Serializable {
     private boolean mAutoStart;
     private boolean mBluetooth;
 
+    public static final String sRecordingFilePath = "/sdcard/Audio/telrec";
+
     public String getFormat() {
         return mFormat;
     }
