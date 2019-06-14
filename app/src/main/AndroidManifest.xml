@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
+    <uses-permission android:name="android.permission.FOREGROUD_SERVICE"/>
+
     <!--android.permission.RECORD_AUDIO         オーディオの録音（マイク）-->
     <!--android.permission.READ_PHONE_STATE     携帯のステータスとIDの読み取り : [Dangerous]-->
     <!--android.permission.PROCESS_OUTGOING_CALLS   発信を管理（番号変更とか切ってしまうとか）、、→これはいらないだろう。-->

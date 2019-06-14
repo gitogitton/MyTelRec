@@ -744,7 +744,7 @@ public class FragmentMain extends Fragment {
             Intent intent = new Intent( mContext, TelRecService.class );
             mIntentFileType = mSettingData.getFormat();
             intent.putExtra( KEY_FILE_TYPE, mIntentFileType);
-            ComponentName componentName = mContext.startService( intent );
+            ComponentName componentName = mContext.startForegroundService( intent );
             if ( componentName == null ) {
                 //Log.d( LOG_TAG, "Service doesn't exist." );
                 Toast.makeText( mContext, "Service doesn't exist.", Toast.LENGTH_LONG ).show();

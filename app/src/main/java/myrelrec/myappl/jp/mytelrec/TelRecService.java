@@ -1,11 +1,16 @@
 package myrelrec.myappl.jp.mytelrec;
 
 import android.app.Notification;
+import android.app.Notification.Builder;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.media.AudioManager;
+import android.graphics.Color;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -13,6 +18,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
 import android.support.annotation.Nullable;
+import android.support.v4.app.NotificationCompat;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -21,7 +27,6 @@ import android.util.Log;
 public class TelRecService extends Service {
 
     private final String LOG_TAG = getClass().getSimpleName();
-    private final String KEY_FILE_TYPE = "key_fileType"; //どっか共通に出来る？（define in FragmentMain）
 
     private ServiceHandler mServiceHandler;
     private String mIntentFileType;
@@ -30,7 +35,7 @@ public class TelRecService extends Service {
 
     // Handler that receives messages from the thread
     private final class ServiceHandler extends Handler {
-        public ServiceHandler(Looper looper) {
+        private ServiceHandler(Looper looper) {
             super(looper);
         }
         @Override
@@ -42,16 +47,41 @@ public class TelRecService extends Service {
             notifyIntent.setClass(  mContext, MainActivity.class );
             PendingIntent pendingIntent = PendingIntent.getActivity( mContext, 0, notifyIntent, 0 );
 
-            //通知内容設定 (android 4 より下をサポートするなら NotificationCompat)
-            Notification.Builder builder = new Notification.Builder( mContext );
-            builder.setSmallIcon( R.mipmap.ic_launcher_round );
-            builder.setContentTitle( "通話記録中" );
-            builder.setContentText( "これは setContextText() です" );
-            builder.setTicker( "setTicker() です。" );
-            builder.addAction( R.drawable.ic_settings_white_24dp, "OK (表示してみただけです。)", pendingIntent ); //ContentTextの下にでる。OK/Cancelボタンなど何某かのAction(PendingIntentで指定するのだろう)につなげる。APIレベルで・・・。とりあえず出たので。
-            builder.setContentIntent( pendingIntent );
+//android 4.4
+//            //通知内容設定 (android 4 より下をサポートするなら NotificationCompat)
+//            NotificationCompat.Builder builder = new NotificationCompat.Builder( mContext );
+//            builder.setSmallIcon( R.mipmap.ic_launcher_round );
+//            builder.setContentTitle( "通話記録中" );
+//            builder.setContentText( "これは setContextText() です" );
+//            builder.setTicker( "setTicker() です。" );
+//            builder.addAction( R.drawable.ic_settings_white_24dp, "OK (表示してみただけです。)", pendingIntent ); //ContentTextの下にでる。OK/Cancelボタンなど何某かのAction(PendingIntentで指定するのだろう)につなげる。APIレベルで・・・。とりあえず出たので。
+//            builder.setContentIntent( pendingIntent );
+//            startForeground( 111, builder ); // id=0はダメ！！
 
-            startForeground( 111, builder.build() ); // id=0はダメ！！
+//android 8.x
+            //=======================
+            //通知チャンネルを作る
+            //=======================
+            NotificationManager notificationManager = (NotificationManager) mContext.getSystemService( Context.NOTIFICATION_SERVICE  );
+            String channelID = "chID_telRecService";
+            NotificationChannel channel = new NotificationChannel( channelID, "留守録のチャンネル", NotificationManager.IMPORTANCE_DEFAULT );
+            // 通知時のライトの色
+            channel.setLightColor(Color.GREEN);
+            // ロック画面で通知を表示するかどうか
+            channel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+            notificationManager.createNotificationChannel( channel );
+            //=======================
+            //通知をチャンネルへ投稿
+            //=======================
+            Notification notification = new Notification.Builder( mContext, channelID )
+                    .setContentTitle("通知タイトル")
+                    .setContentText("通知コンテンツ")
+                    .setSmallIcon(R.drawable.ic_telrec)
+                    .build();
+            // Send the notification.
+            notificationManager.notify( 111, notification );
+
+            startForeground( 111, notification ); // id=0はダメ！！
 
             setMyListener(); //PhoneStateListener 登録
        }
@@ -84,7 +114,8 @@ public class TelRecService extends Service {
         msg.arg1 = startId;
         mServiceHandler.sendMessage( msg );
 
-        mIntentFileType = intent.getStringExtra( KEY_FILE_TYPE );
+        String KEY_FILE_TYPE = "key_fileType";
+        mIntentFileType = intent.getStringExtra(KEY_FILE_TYPE);
         Log.d( LOG_TAG, "mIntentFileType->" + mIntentFileType );
 
         // If we get killed, after returning from here, restart　、、復活してくれる。（と理解してるけれど）
