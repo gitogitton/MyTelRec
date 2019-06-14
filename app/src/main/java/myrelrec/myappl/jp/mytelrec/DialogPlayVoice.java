@@ -23,7 +23,7 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
 
     private final String LOG_TAG = getClass().getSimpleName();
     private final String mDialogTitle = "音声を再生";
-    private final String mFilePath = SettingData.sRecordingFilePath;
+    private String mFilePath = "";
     private String mMessage = "";
     private View mView;
     private Context mContext;
@@ -42,6 +42,7 @@ public class DialogPlayVoice extends DialogFragment implements MediaPlayer.OnErr
         Bundle args = getArguments();
         if ( args != null ) {
             mMessage = args.getString( "target_file" );
+            mFilePath = args.getString( "file_path" );
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder( getActivity() );

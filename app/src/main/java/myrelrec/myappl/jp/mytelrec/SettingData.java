@@ -1,5 +1,8 @@
 package myrelrec.myappl.jp.mytelrec;
 
+import android.content.Context;
+
+import java.io.File;
 import java.io.Serializable;
 
 public class SettingData implements Serializable {
@@ -8,7 +11,8 @@ public class SettingData implements Serializable {
     private boolean mAutoStart;
     private boolean mBluetooth;
 
-    public static final String sRecordingFilePath = "/sdcard/Audio/telrec";
+    public SettingData() {
+    }
 
     public String getFormat() {
         return mFormat;

@@ -15,7 +15,7 @@ import java.util.Locale;
 public class MyPhoneStateListener extends PhoneStateListener implements MediaRecorder.OnInfoListener, MediaRecorder.OnErrorListener {
 
     private final String LOG_TAG = getClass().getSimpleName();
-    private final String recFilePath = SettingData.sRecordingFilePath;      //録音ファイルの保存先
+    private  String recFilePath = "";      //録音ファイルの保存先
     private boolean mRecNow = false; //録音中はtrue
     private boolean mReceive = false; //着信の場合にtrue
     private MediaRecorder mMediaRecorder = null;
@@ -23,10 +23,11 @@ public class MyPhoneStateListener extends PhoneStateListener implements MediaRec
     private String mFileType;
     private String mCallNumber = "";
 
-    public MyPhoneStateListener( Context context, String fileType ) {
+    public MyPhoneStateListener( Context context, String fileType, String path ) {
         mContext = context;
         mFileType = fileType;
-        Log.d( LOG_TAG, "fileType->" + mFileType );
+        recFilePath = path;
+        Log.d( LOG_TAG, "fileType->" + mFileType + "file_path->" + recFilePath );
     }
 
     @Override

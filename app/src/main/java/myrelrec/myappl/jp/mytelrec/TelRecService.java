@@ -30,6 +30,7 @@ public class TelRecService extends Service {
 
     private ServiceHandler mServiceHandler;
     private String mIntentFileType;
+    private String mIntentFilePath;
     private Context mContext;
     private MyPhoneStateListener mMyListener = null;
 
@@ -116,7 +117,8 @@ public class TelRecService extends Service {
 
         String KEY_FILE_TYPE = "key_fileType";
         mIntentFileType = intent.getStringExtra(KEY_FILE_TYPE);
-        Log.d( LOG_TAG, "mIntentFileType->" + mIntentFileType );
+        mIntentFilePath = intent.getStringExtra( "KEY_FILE_PATH" );
+        Log.d( LOG_TAG, "mIntentFileType->" + mIntentFileType + "/" + "mIntentFilePath->" + mIntentFilePath );
 
         // If we get killed, after returning from here, restart　、、復活してくれる。（と理解してるけれど）
         return START_STICKY;
@@ -145,7 +147,7 @@ public class TelRecService extends Service {
         TelephonyManager telephonyManager = (TelephonyManager) mContext.getSystemService( Context.TELEPHONY_SERVICE );
         //リスナーの登録
         if ( telephonyManager != null ) {
-             mMyListener = new MyPhoneStateListener( mContext, mIntentFileType );
+             mMyListener = new MyPhoneStateListener( mContext, mIntentFileType, mIntentFilePath );
             telephonyManager.listen ( mMyListener, PhoneStateListener.LISTEN_CALL_STATE ); // Listen for changes to the device call state. //
             Log.d( LOG_TAG, "Telephony Listener set ! listener addr->"+mMyListener );
         } else {

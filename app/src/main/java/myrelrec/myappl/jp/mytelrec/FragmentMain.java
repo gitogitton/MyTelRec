@@ -55,7 +55,7 @@ public class FragmentMain extends Fragment {
     private final String LOG_TAG = getClass().getSimpleName();
     private final String SETTING_FILE_NAME = "setting.csv"; //format : [file format],[auto start],[use bluetooth]
     private final String KEY_FILE_TYPE = "key_fileType";
-    private final String REC_FILE_PATH = SettingData.sRecordingFilePath;      //録音ファイルの保存先
+    private final String KEY_FILE_PATH = "key_filePath";
     private final int   MENU_TYPE_MAIN = 1;
     private final int   MENU_TYPE_FILE_DEL = 2;
     private final int   MY_PERMISSIONS_REQUEST = 1;
@@ -73,6 +73,7 @@ public class FragmentMain extends Fragment {
     private View mView;
     private SettingData mSettingData = new SettingData();
     private String mIntentFileType;
+    private String mIntentFilePath;
     private View mSelectedView = null; //選択中（バックグランド色）を解除するため選択行のViewを保存
 //複数ファイル選択を可能にする（追加）
     private ArrayList<String> mSelectedFiles = null;
@@ -121,9 +122,6 @@ public class FragmentMain extends Fragment {
         } else {
 
         }
-
-        Log.d( LOG_TAG, "path->"+REC_FILE_PATH );
-
         return mView;
     }
 
@@ -675,7 +673,7 @@ public class FragmentMain extends Fragment {
         //Log.d( LOG_TAG, "deleteSpecifiedFile() Go !!" );
 
         TextView textFileName = mSelectedView.findViewById( R.id.text_phoneNumber );
-        String fileName = REC_FILE_PATH + "/" + textFileName.getText().toString();
+        String fileName = mContext.getFilesDir().getName() + "/" + textFileName.getText().toString();
         //Log.d( LOG_TAG, "deleted file -> " + fileName );
 
         File file = new File( fileName );
@@ -701,7 +699,7 @@ public class FragmentMain extends Fragment {
 
         for ( String selectedFile : mSelectedFiles ) {
 
-            String fileName = REC_FILE_PATH + "/" + selectedFile;
+            String fileName = mContext.getFilesDir().getName() + "/" + selectedFile;
             //Log.d( LOG_TAG, "deleted file -> " + fileName );
 
             File file = new File( fileName );
@@ -744,6 +742,8 @@ public class FragmentMain extends Fragment {
             Intent intent = new Intent( mContext, TelRecService.class );
             mIntentFileType = mSettingData.getFormat();
             intent.putExtra( KEY_FILE_TYPE, mIntentFileType);
+            mIntentFilePath = mContext.getFilesDir().getName();
+            intent.putExtra( KEY_FILE_PATH, mIntentFilePath );
             ComponentName componentName = mContext.startForegroundService( intent );
             if ( componentName == null ) {
                 //Log.d( LOG_TAG, "Service doesn't exist." );
@@ -810,6 +810,7 @@ public class FragmentMain extends Fragment {
                     DialogPlayVoice dialogPlayVoice = new DialogPlayVoice();  // --> new よりも newInstance() の方がいい？ 自作SFTPアプリではそうしてるんだけど・・。やり方が安定しないなぁ。まぁ、ケースバイケースで拡張性の要不要を熟慮すればいいんだけど・・・。
                     Bundle args = new Bundle();
                     args.putString( "target_file", item.getPhoneNumber() );
+                    args.putString( "file_path", mContext.getFilesDir().getName() );
                     dialogPlayVoice.setArguments( args );
                     FragmentManager fm = getFragmentManager();
                     if ( fm != null ) {
@@ -894,7 +895,7 @@ public class FragmentMain extends Fragment {
     private ArrayList<ItemData> getFileList() {
         ArrayList<ItemData> arrayList = new ArrayList<>();
 
-        File fileList = new File( REC_FILE_PATH + "/" );
+        File fileList = new File( mContext.getFilesDir().getName() + "/" );
         String[] dirList = fileList.list();
         if ( dirList == null || dirList.length <= 0 ) {
             return arrayList;
